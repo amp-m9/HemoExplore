@@ -1,0 +1,120 @@
+@font-face {
+  font-family: "Archive";
+  src: url(./fonts/Archive-Regular.ttf);
+  font-style: normal;
+  text-rendering: optimizeLegibility;
+  font-weight: 500;
+}
+
+@font-face {
+  font-family: "Cantarell";
+  src: url(./fonts/Cantarell-VF.otf);
+  font-style: normal;
+  text-rendering: optimizeLegibility;
+  font-weight: 100 1000;
+}
+@font-face {
+  font-family: "ABeeZee";
+  src: url(./fonts/ABeeZee-Regular.ttf);
+  font-style: normal;
+  text-rendering: optimizeLegibility;
+  font-weight: 500;
+}
+
+
+.background {
+  margin: 0;
+  position: absolute;
+  z-index: -1;
+}
+
+.backButton {
+  display: none;
+  background: none;
+  color: white;
+  font-size: 20px;
+  font-family: ABeeZee;
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+}
+
+.homeContainer{
+  display: flex;
+  align-items: center;
+  justify-items: left;
+  margin: 0;
+  height: 100vh;
+  /* background: ; */
+  background: none;
+  /* background: radial-gradient(circle at 65% center,#00000000 0%, #00000030 20.19%, #000000 90%); */
+  background: radial-gradient(circle at 65%, rgba(0,0,0,0) 0%, #000000 90.86%, #000000 100%);
+  /* background: radial-gradient(circle at 70% 50%, #00000000 0% 0%, #EB000000 92.19% 92.19%, #000000 100% 100%) */
+}
+
+.homeBody{
+  width: 85%;
+  margin:auto;
+  color: white;
+}
+.homeTitle{
+  width: fit-content;
+  text-align: center;
+}
+.homeBody h1{
+  font-family: Archive;
+  font-size: 128px;
+  margin:0px;
+}
+
+.homeBody h2{
+  font-family: Cantarell;
+  font-size: 50px;
+  font-weight: 300;
+  margin:0px;
+  margin-top: -15px;
+}
+
+ul {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  font-family: ABeeZee;
+  font-size: 30px;
+  margin-top: 20px;
+}
+li {
+  display: inline;
+}
+
+a {
+  text-decoration: none;
+  padding: 0px 10px;
+  margin: 0 5px;
+  color:white;
+  position: relative;
+  cursor: pointer;
+}
+
+a::before {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 2px;
+    border-radius: 4px;
+    background-color: white;
+    bottom: 0;
+    left: 0;
+    transform-origin: right;
+    transform: scaleX(0);
+    transition: transform .3s ease-in-out;
+}
+
+a:hover::before {
+  transform-origin: left;
+  transform: scaleX(1);
+}
+.flex-wrapper {
+  display: flex;
+  height: 5px;
+}

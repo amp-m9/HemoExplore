@@ -1,0 +1,11 @@
+Model Information:
+* title:	DL Beta Challenge C3 Red Blood Cell
+* source:	https://sketchfab.com/3d-models/dl-beta-challenge-c3-red-blood-cell-714fd0e53baf4976b2d1a2a8ee259b07
+* author:	Lily (https://sketchfab.com/Lily)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "DL Beta Challenge C3 Red Blood Cell" (https://sketchfab.com/3d-models/dl-beta-challenge-c3-red-blood-cell-714fd0e53baf4976b2d1a2a8ee259b07) by Lily (https://sketchfab.com/Lily) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
