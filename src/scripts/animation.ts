@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import Stats from 'stats-js';
 import { CSS2DObject, CSS2DRenderer } from 'three/examples/jsm/renderers/CSS2DRenderer';
+import { CSG } from 'three-csg-ts';
 import { createNoise2D } from 'simplex-noise';
 import {GLTFLoader} from 'three/examples/jsm/loaders/GLTFLoader.js';
 import styles from '../App.module.css';
@@ -46,10 +47,15 @@ const spotlightOffSet = new THREE.Vector3(10,-7,-100);
 const depth = new THREE.Vector3(0,0,22);
 const directionalLightOffset = new THREE.Vector3(-10,-10,0);
 let curveMesh: THREE.Line;
-const journeyTimeline = gsap.timeline({ paused: true });
 let orbitControls:OrbitControls;
 let orbitalControlsRelativePosition = new THREE.Vector3();
-let step = 0.0001;
+const loopSettings = {
+    progress: 0.00001,
+    timePassed: 0,
+    pauseAnimation: false,
+    step: 0.0001,
+    speed: 1
+}
 let relVel = 1;
 var loaded = false;
 let activeAnimation : ()=>any;
@@ -61,9 +67,8 @@ const camOption = {
 }
 let sioController:SIOController; 
 
+let textRenderer: CSS2DRenderer, bloodCellLabel:CSS2DObject;
 
-let textRenderer: CSS2DRenderer
-let bloodCellText:CSS2DObject, bloodCellLabel:CSS2DObject //,bloodCellText:HTMLDivElement, bloodCellText:HTMLDivElement;
 
 export function initBloodCellAnimation() {
     setUpRenderer();
@@ -143,7 +148,7 @@ export function initBloodCellAnimation() {
                 scene.add(mainCell.group)
                 // scene.add(mainCell.highlight)
                 
-                updateBloodCells(0, 0.0001);
+                updateBloodCells(0);
                 bloodCellInstances.material.needsUpdate = true;
                 setUpClickables();
                 loaded = true;
@@ -156,27 +161,26 @@ export function initBloodCellAnimation() {
     setUpLighting();
     scene.fog = new THREE.Fog( 0xd24141, 5, 170);
 
-    let progress =  0.00001;
-    let timePassed = 0;
-    let paused:false;
+   
     activeAnimation = () => idleAnimation();
    
     const loop = (time:number) => {
         stats.update();
-        let delta = time - timePassed;
-        timePassed = time;
+        let delta = time - loopSettings.timePassed;
+        loopSettings.timePassed = time;
         renderer.render(scene, camera);
         textRenderer.render(scene, camera);
-        if(!loaded)
+        if(!loaded || loopSettings.pauseAnimation)
             return;
         
         updateLighting();
-        updateBloodCells(progress, step);
+        // updateBloodCells(loopSettings.progress, loopSettings.step * loopSettings.speed);
+        updateBloodCells(loopSettings.progress);
             
         activeAnimation()
         
-        progress+=step;
-        progress%=1;
+        loopSettings.progress+=(loopSettings.step * loopSettings.speed);
+        loopSettings.progress%=1;
     }
 
     renderer.setAnimationLoop(loop);
@@ -205,10 +209,12 @@ function generateCellData() {
         redBloodCellData[i] = cellData;
     }
     const fake = new THREE.Mesh();
+
     mainCell = {
+        group: new THREE.Group(),
         offset: new THREE.Vector3(0, 0, 0),
         progress: 0.001,
-        velocity: 0,
+        velocity: getRandomArbitrary(0.000098, 0.0001),
         mesh: fake,
         highlight: fake
     };
@@ -231,10 +237,13 @@ function setUpBloodVessels(fiveTone: THREE.Texture, threeTone: THREE.Texture) {
 
     const vesselOuterGeometry = new THREE.TubeGeometry(curve, undefined, innerWallRadius + .5, 17);
     const vesselOuterMaterial = new THREE.MeshToonMaterial(outerWalltoonOptions);
-    const outerVesselMesh = new THREE.Mesh(vesselOuterGeometry, vesselOuterMaterial);
+    let outerVesselMesh = new THREE.Mesh(vesselOuterGeometry, vesselOuterMaterial);
+
+    
     scene.add(outerVesselMesh);
 
-    const innerVesselGeometry = new THREE.TubeGeometry(curve, undefined, innerWallRadius, 17);
+    const innerVesselGeometry = new THREE.TubeGeometry(
+        curve, undefined, innerWallRadius, 17);
     const innerVesselMaterial = new THREE.MeshToonMaterial(innerWalltoonOptions);
     const innerVesselMesh = new THREE.Mesh(innerVesselGeometry, innerVesselMaterial);
     innerVesselMesh.receiveShadow = true;
@@ -263,17 +272,17 @@ function setUpClickables(){
         object:mainCell.group,
         highlighted:false,
         highlightFunction(){
+            //@ts-ignore
             mainCell.highlight.material.opacity = 0.5;
             let textPos = camera.worldToLocal(mainCell.mesh.position.clone());
             textPos.add(new THREE.Vector3(.8,.8,0));
             textPos = camera.localToWorld(textPos)
             bloodCellLabel.position.copy(textPos)
             mainCell.group.add(bloodCellLabel)
-            // addIfNotInScene(bloodCellLabel)
             this.highlighted = true;
         },
         unHighlightFunction() {
-            this.highlighted = false;
+            this.highlighted = false; //@ts-ignore ↓
             mainCell.highlight.material.opacity = 0.1;
             mainCell.group.remove(bloodCellLabel);
         },
@@ -325,14 +334,15 @@ function onWindowResize(){
 }
 
 let rotator = 0;
-function updateBloodCells(_progress:number, step:number){
+function updateBloodCells(){
     let data:CellData;
     for(let i = 0; i<redBloodCellCount; i++){
         data = redBloodCellData[i];
         
         const start = curve.getPoint(data.progress);
         
-        data.progress+= data.velocity * relVel;
+        // data.progress+= data.velocity * relVel * loopSettings.speed;
+        data.progress+= data.velocity * relVel * loopSettings.speed;
         data.progress%=1;
         
         redBloodCellData[i]=data;
@@ -348,19 +358,21 @@ function updateBloodCells(_progress:number, step:number){
         
         bloodCellInstances.setMatrixAt( i, dummy.matrix.clone() );
     }
-    let point = curve.getPoint(_progress + step*70);
-    mainCell.progress = _progress + step*70
+    let point = curve.getPoint(mainCell.progress);
+    mainCell.progress+= mainCell.velocity * relVel * loopSettings.speed;
+    mainCell.progress%=1;
     mainCell.group.position.set(point.x, point.y, point.z);
-    mainCell.mesh.rotateOnAxis(new THREE.Vector3(1,1,0).normalize(), (Math.PI/200 + (Math.PI * step)) )
-    mainCell.highlight.rotateOnAxis(new THREE.Vector3(1,1,0).normalize(), (Math.PI/200 + (Math.PI * step)) )
+    const rotation = (Math.PI/200 + (Math.PI * loopSettings.step )) * loopSettings.speed
+    mainCell.mesh.rotateOnAxis(new THREE.Vector3(1,1,0).normalize(), rotation )
+    mainCell.highlight.rotateOnAxis(new THREE.Vector3(1,1,0).normalize(), rotation )
     bloodCellInstances.instanceMatrix.needsUpdate = true;
     bloodCellInstances.castShadow = true;
     
     
-    rotator += 0.0001;
-    relVel -= 0.01;
-    if (relVel<1.001)
-        relVel = 2.5;
+    rotator += 0.0001 * loopSettings.speed;
+    relVel -= 0.04 * loopSettings.speed;
+    if (relVel<1.009)
+        relVel = 3.5;
     // relVel = clamp(relVel, .5, 3);
 } 
 
@@ -377,15 +389,15 @@ function updateCamera() {
 }
 
 function adjustCameraForTransforms(){
-    let prog = clamp(mainCell.progress - (step*70), 0, 1);
+    let prog = clamp(mainCell.progress - (0.007), 0, 1);
     const cameraPos = curve.getPoint(prog);
     camera.position.copy(cameraPos);
-    const cameraLookAt = curve.getPoint(mainCell.progress); 
+    const cameraLookAt = mainCell.group.position.clone(); 
     camera.lookAt(...cameraLookAt.toArray());
 }
 
 function adjustDummyForLights(){
-    let prog = clamp(mainCell.progress - (step*70), 0, 1);
+    let prog = clamp(mainCell.progress - (0.007), 0, 1);
     const position = curve.getPoint(prog);
     lightingDummy.position.copy(position);
     const lookAt = curve.getPoint(mainCell.progress); 
@@ -397,7 +409,7 @@ function adjustDummyForLights(){
 function updateLighting() {
     adjustDummyForLights();
 
-    let prog = clamp(mainCell.progress - (step*70), 0, 1);
+    let prog = clamp(mainCell.progress - (0.007), 0, 1);
     const anchor = curve.getPoint(prog);
     
     const spotlightPosition = lightingDummy.localToWorld(spotlightOffSet.clone());
@@ -416,43 +428,47 @@ export function play(){
     const backButton = document.querySelector(`button.${styles.backButton}`) as HTMLButtonElement
     
     const timeline = gsap.timeline();
+    timeline.add('start', 0)
+
     timeline.to(camOption, {
         camRotation: 0,
-        camTranslateZ: step*30,
+        camTranslateZ: 0.003,
         camTranslateY:.9,
         delay: 0,
         duration: 2,
         ease:'expo.inOut',
-    });
+    }, 'start');
 
     timeline.to(homeContainer, {
         delay: 0,
         opacity: 0,
         duration: 2,
+        onUpdate: ()=>{
+        },
         onComplete: () => { 
-            homeContainer.style.display = 'none';
-            backButton.style.display = 'block';
+            orbitControls.enabled = true;
+            orbitControls.dampingFactor = .5;
+            orbitControls.update();
             sioController.wake();
             activeAnimation = inspectCellAnimation;
-            orbitControls.update();
-            orbitControls.enabled = true;
+            homeContainer.style.display = 'none';
+            backButton.style.display = 'block';
         }
-    });
+    }, 'start');
     
     timeline.to(curveMesh.material, {
         opacity: .4,
         duration: 2,
         delay: 0,
         ease:'expo.inOut',
-    });
+    }, 'start');
 
 
     orbitControls.enabled = false;
     timeline.delay(0);
     timeline.repeat(0);
     
-    timeline.play().then(()=>{
-        
+    timeline.play('start').then(()=>{
         timeline.kill();
     })
 }
@@ -476,11 +492,6 @@ export function backToIdle(){
         duration: 1,
         delay: 0.001,
         ease:'expo.inOut',
-        onComplete: function(){
-            updateCamera();
-            gsap.ticker.remove(tweenToIdle);
-            activeAnimation = () => idleAnimation();    
-        }
     });
 
     timeline.to(homeContainer, {
@@ -496,13 +507,12 @@ export function backToIdle(){
     let progress = 0;
     let complete = false;
     const tweenToIdle = (time:number, deltaTime:number, frame:number) => {
-        // orbitControls.position
         if(complete)
             return;
         progress+= deltaTime/1000;
         progress = clamp(progress, 0, 1);
 
-        const destination = curve.getPoint(mainCell.progress - step*70);
+        const destination = curve.getPoint(mainCell.progress - 0.007);
         const source = new THREE.Vector3();
         camera.getWorldPosition(source);
         const direction = destination.clone().sub(source);
@@ -520,17 +530,17 @@ export function backToIdle(){
         camera.lookAt(camera.localToWorld(new THREE.Vector3(0,0,-10)));
 
         if(progress>0.99){
-            complete = true;
             gsap.ticker.remove(tweenToIdle);
-            activeAnimation = () => idleAnimation();
+            activeAnimation = idleAnimation;
         }
     }
-    // timeline.delay(0);
+
     sioController.sleep();
     gsap.ticker.add(tweenToIdle);
     timeline.play().then( () => {
-        gsap.ticker.remove(tweenToIdle);
-        activeAnimation = () => idleAnimation();
+        activeAnimation = idleAnimation;
+        loopSettings.pauseAnimation = false;
+        loopSettings.speed = 1;
     }) 
 }
 
@@ -554,7 +564,11 @@ function setUpTextElements() {
     bloodCellLabel = new CSS2DObject(div);    
 }
 function inspectRedBloodCell(): any {
-    play()
+    const timeline = gsap.timeline();
+    timeline.to(loopSettings, {speed:.000001, duration:1})
+    // loopSettings.speed = .000001;
+    // loopSettings.progress = 0;
+    timeline.play();
     return;
     throw new Error('Function not implemented.');
 }
