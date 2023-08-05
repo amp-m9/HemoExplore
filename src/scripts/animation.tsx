@@ -302,7 +302,7 @@ function createAndAddMainBloodCell(
     const generatedCell = createBloodCell(cellMaterial, geometry, 1, haemoglobinCount);
     mainCell.mesh = generatedCell.cell;
     mainCell.highlight = createBloodCell(clickableMaterial, geometry, 1.2, 0).cell;
-    mainCell.group = generatedCell.group.remove(generatedCell.haemoglobin);
+    mainCell.group = generatedCell.group.remove(generatedCell.haemoglobin).add(mainCell.highlight);
     mainCell.haemoglobin = generatedCell.haemoglobin;
     scene.add(mainCell.group);
 }
