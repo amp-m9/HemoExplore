@@ -25,9 +25,21 @@
 .background {
   margin: 0;
   position: absolute;
-  z-index: -1;
+  z-index: -2;
+  right: 0;
+  top:0;
 }
-
+.inspectorUI {
+  position: absolute;
+  z-index: -1;
+  top:0;
+  right: 0;
+  height: 100vh;
+  top:0;
+  margin: 0;
+  padding: 0;
+  pointer-events: none;
+}
 .backButton {
   display: none;
   background: none;
@@ -39,6 +51,7 @@
   left: 10px;
   border: none;
 }
+
 
 .homeContainer{
   display: flex;
@@ -118,4 +131,105 @@ a:hover::before {
 .flex-wrapper {
   display: flex;
   height: 5px;
+}
+
+.inspectorPaneWrapper{
+  height: 100vh;
+  display: none;
+  overflow-x: hidden;
+  top:0;
+  left:0;
+  width: 35vw;
+  margin: 0;
+  padding: 0;
+  opacity: 0;
+  transition: all ease-in 1s;
+  position: absolute;
+  background-color: #2B1944;
+}
+.inspectorPaneWrapper::-webkit-scrollbar{
+  width: 15px;
+}
+.inspectorPaneWrapper::-webkit-scrollbar-thumb{
+  background: #917BAE;
+}
+.inspectorPaneWrapper::-webkit-scrollbar-track{
+  background: #4C3768;
+}
+/* .inspectorPaneWrapper::-webkit-scrollbar{} */
+
+.inspectorPane{
+  padding: 30px;
+}
+
+.inspectorPane .backButton{
+  position: relative;
+  left: auto;
+  bottom: auto;
+  margin-bottom: 20px;
+  opacity: inherit;
+}
+.objectGrid {
+  display: flex;
+  flex-flow: row wrap;
+}
+.objectCard{
+  width: 140px;
+  margin-right: 30px;
+  margin-bottom: 30px;
+  color: white;
+  transition: all .2s ease-in;
+}
+.objectCard .imageWrapper {
+  background: #917BAE;
+  width: 100%;
+  border-radius: 16px;
+}
+.objectCardTitle{
+  font-family: Cantarell;
+  font-size: 18px;
+  margin-top: 7px;
+  padding: 0 9px;
+}
+
+.objectCard:hover{
+  color: wheat;
+  filter: saturate(150%);
+}
+.imageWrapper img{
+  border-radius: 16px;
+  background: #917BAE;
+  object-fit: contain;
+  width: 100%;
+}
+
+.objectDataPane{
+  position: absolute;
+  width: calc(100% - 60px);
+  left: 100%;
+  top: 0;
+  background-color: #2B1944;
+  color: white;
+  min-height: calc(100% - 60px);
+  z-index: 2;
+  padding: 0 30px 50px 30px;
+  transition: all .3s;
+}
+.objectPaneStickyTop{
+  position: sticky;
+  top:0px;
+  padding-top:30px;
+  background-color: #2B1944;
+}
+.objectDataPanebackButton{
+  position: relative;
+  margin-bottom: 20px;
+}
+.objectDataTitle{
+  font-family: ABeeZee;
+  font-size: 32px;
+}
+.objectDataText{
+  font-family: Cantarell;
+  font-size: 18px;
 }
