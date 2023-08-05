@@ -1,11 +1,19 @@
 import { onMount, type Component } from 'solid-js';
 import styles from './App.module.css';
-import { initBloodCellAnimation, play as start, backToIdle } from './scripts/animation';
+import { initBloodCellAnimation, play as start, enableCompare } from './scripts/animation';
+import InspectorPane from './components/inspectorPane';
 
 const App: Component = () => {
+
+
   onMount(initBloodCellAnimation)
   return (
     <div>
+      <div id='inspectorUIDiv' class={styles.inspectorUI}>
+        <button style={{ "pointer-events": 'auto' }} onClick={enableCompare}> COMPARE</button>
+
+      </div>
+
       <canvas class={`webgl ${styles.background}`} id='animationContainer' />
       <div id='homeContainer' class={`${styles.homeContainer}`}>
         <div class={styles.homeBody}>
@@ -25,7 +33,8 @@ const App: Component = () => {
           </div>
         </div>
       </div>
-      <button class={styles.backButton} onClick={backToIdle}>back</button>
+      <InspectorPane />
+      <button id="backButton" class={styles.backButton}>back</button>
     </div>
   );
 };
