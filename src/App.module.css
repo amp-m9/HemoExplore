@@ -13,6 +13,7 @@
   text-rendering: optimizeLegibility;
   font-weight: 100 1000;
 }
+
 @font-face {
   font-family: "ABeeZee";
   src: url(./fonts/ABeeZee-Regular.ttf);
@@ -21,25 +22,196 @@
   font-weight: 500;
 }
 
+@font-face {
+  font-family: "Bebas Neue";
+  src: url(./fonts/BebasNeue-Regular.ttf);
+  font-style: normal;
+  text-rendering: optimizeLegibility;
+  font-weight: 400;
+}
+
+:root {
+  --main-bg-color: #ffffff;
+  --leftPanelWidth: 300px;
+  --navbarHeight: 74px;
+  --learnPanelPaddingTop: 50px;
+}
+
+/* learn page  */
+
+.navbar {
+  display: flex;
+  flex-direction: row;
+  position: sticky;
+  top: 0px;
+  color: white;
+  height: var(--navbarHeight);
+  width: 100vw;
+  box-sizing: border-box;
+  z-index: 1001;
+}
+
+
+.navbar ul {
+  list-style-type: none;
+  padding: 0;
+  margin: auto 0;
+  font-family: ABeeZee;
+  font-size: 18px;
+  list-style-type: none;
+}
+
+.navbar nav {
+  height: min-content;
+  margin: auto 0;
+}
+
+.navbar li {
+  display: inline;
+}
+
+.navbar a {
+  text-decoration: none;
+  padding: 0px 10px;
+  margin: 0 5px;
+  color: white;
+  position: relative;
+  cursor: pointer;
+}
+
+.navbar a::before {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 2px;
+  border-radius: 4px;
+  background-color: white;
+  bottom: 0;
+  left: 0;
+  transform-origin: center;
+  transform: scaleX(0);
+  transition: transform .3s ease-in-out;
+}
+
+a.active::before {
+  transform-origin: center;
+  transform: scaleX(.9);
+  background-color: #EB3447;
+}
+
+.learnPage {
+  background-blend-mode: normal;
+  box-sizing: border-box;
+  height: calc(100vh - var(--navbarHeight));
+  width: 100%;
+  overflow-y: scroll;
+  overflow-x: hidden;
+  z-index: 1;
+  color: white;
+}
+
+.bgBlur {
+  height: 100vh;
+  width: 100%;
+  margin: 0;
+  backdrop-filter: blur(4px);
+  background: radial-gradient(circle, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.5) 100%);
+  position: absolute;
+  z-index: -1;
+  left: 0;
+  top: 0;
+}
+
+.learnPanelWrapper {
+  z-index: 1;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 420px;
+  gap: 10px;
+  width: 1250px;
+  padding: 35px 0;
+  margin: 0px auto;
+  color: #ffffff;
+}
+
+.learnPage p {
+  font-family: Cantarell;
+  font-size: 17px;
+}
+
+.learnPanelMiddle {
+  padding: 61px;
+  height: 100%;
+  background: rgba(0, 0, 0, .33);
+  backdrop-filter: blur(50px);
+  box-sizing: border-box;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+}
+
+.learnPanelMiddle h1 {
+  margin: 0;
+  line-height: 1;
+  font-family: "Bebas Neue";
+  font-size: 96px;
+  font-weight: 100;
+}
+
+.learnPanelMiddle h2 {
+  margin: 0 0 45px 0;
+  color: #EB3447;
+  font-family: Cantarell;
+  font-size: 18px;
+  letter-spacing: 10.2px;
+}
+
+.learnPanelBody {
+  flex-shrink: 1;
+  flex-grow: 1;
+  flex-basis: content;
+}
+
+.learnPanelRight {
+  padding: 25px;
+  background: rgba(0, 0, 0, .33);
+  backdrop-filter: blur(50px);
+  border-radius: 8px;
+  height: min-content;
+  position: sticky;
+  top: 0;
+}
+
+.learnPanelRight h3 {
+  font-size: 17;
+  color: #EB3447;
+}
+
+.learnPanelRight p {
+  font-size: 15px;
+}
 
 .background {
   margin: 0;
   position: absolute;
   z-index: -2;
   right: 0;
-  top:0;
+  top: 0;
+  background: #EB3447;
 }
+
 .inspectorUI {
   position: absolute;
   z-index: -1;
-  top:0;
+  top: 0;
   right: 0;
   height: 100vh;
-  top:0;
+  top: 0;
   margin: 0;
   padding: 0;
   pointer-events: none;
 }
+
 .backButton {
   display: none;
   background: none;
@@ -52,44 +224,54 @@
   border: none;
 }
 
-
-.homeContainer{
+.fullScreenContainer {
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-items: left;
   margin: 0;
   height: 100vh;
-  /* background: ; */
-  background: none;
-  /* background: radial-gradient(circle at 65% center,#00000000 0%, #00000030 20.19%, #000000 90%); */
-  background: radial-gradient(circle at 65%, rgba(0,0,0,0) 0%, #000000 90.86%, #000000 100%);
-  /* background: radial-gradient(circle at 70% 50%, #00000000 0% 0%, #EB000000 92.19% 92.19%, #000000 100% 100%) */
 }
 
-.homeBody{
+.homeContainer {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-items: left;
+  margin: 0;
+  background: radial-gradient(circle at 65%, rgba(0, 0, 0, 0) 0%, #000000 90.86%, #000000 100%);
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+}
+
+.homeBody {
   width: 85%;
-  margin:auto;
+  margin: auto;
   color: white;
 }
-.homeTitle{
+
+.homeTitle {
   width: fit-content;
   text-align: center;
 }
-.homeBody h1{
+
+.homeBody h1 {
   font-family: Archive;
   font-size: 128px;
-  margin:0px;
+  margin: 0px;
 }
 
-.homeBody h2{
+.homeBody h2 {
   font-family: Cantarell;
   font-size: 50px;
   font-weight: 300;
-  margin:0px;
+  margin: 0px;
   margin-top: -15px;
 }
 
-ul {
+.homeBody ul {
   list-style-type: none;
   margin: 0;
   padding: 0;
@@ -97,48 +279,45 @@ ul {
   font-size: 30px;
   margin-top: 20px;
 }
-li {
+
+.homeBody li {
   display: inline;
 }
 
-a {
+.homeBody a {
   text-decoration: none;
   padding: 0px 10px;
   margin: 0 5px;
-  color:white;
+  color: white;
   position: relative;
   cursor: pointer;
 }
 
-a::before {
-    content: '';
-    position: absolute;
-    width: 100%;
-    height: 2px;
-    border-radius: 4px;
-    background-color: white;
-    bottom: 0;
-    left: 0;
-    transform-origin: right;
-    transform: scaleX(0);
-    transition: transform .3s ease-in-out;
+.homeBody a::before {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 2px;
+  border-radius: 4px;
+  background-color: white;
+  bottom: 0;
+  left: 0;
+  transform-origin: center;
+  transform: scaleX(0);
+  transition: transform .3s ease-in-out;
 }
 
 a:hover::before {
-  transform-origin: left;
+  transform-origin: center;
   transform: scaleX(1);
 }
-.flex-wrapper {
-  display: flex;
-  height: 5px;
-}
 
-.inspectorPaneWrapper{
+.inspectorPaneWrapper {
   height: 100vh;
   display: none;
   overflow-x: hidden;
-  top:0;
-  left:0;
+  top: 0;
+  left: 0;
   width: 35vw;
   margin: 0;
   padding: 0;
@@ -147,63 +326,70 @@ a:hover::before {
   position: absolute;
   background-color: #2B1944;
 }
-.inspectorPaneWrapper::-webkit-scrollbar{
+
+.inspectorPaneWrapper::-webkit-scrollbar {
   width: 15px;
 }
-.inspectorPaneWrapper::-webkit-scrollbar-thumb{
+
+.inspectorPaneWrapper::-webkit-scrollbar-thumb {
   background: #917BAE;
 }
-.inspectorPaneWrapper::-webkit-scrollbar-track{
+
+.inspectorPaneWrapper::-webkit-scrollbar-track {
   background: #4C3768;
 }
-/* .inspectorPaneWrapper::-webkit-scrollbar{} */
 
-.inspectorPane{
+.inspectorPane {
   padding: 30px;
 }
 
-.inspectorPane .backButton{
+.inspectorPane .backButton {
   position: relative;
   left: auto;
   bottom: auto;
   margin-bottom: 20px;
   opacity: inherit;
 }
+
 .objectGrid {
   display: flex;
   flex-flow: row wrap;
 }
-.objectCard{
+
+.objectCard {
   width: 140px;
   margin-right: 30px;
   margin-bottom: 30px;
   color: white;
   transition: all .2s ease-in;
 }
+
 .objectCard .imageWrapper {
   background: #917BAE;
   width: 100%;
   border-radius: 16px;
 }
-.objectCardTitle{
+
+.objectCardTitle {
   font-family: Cantarell;
   font-size: 18px;
   margin-top: 7px;
   padding: 0 9px;
 }
 
-.objectCard:hover{
+.objectCard:hover {
   color: wheat;
   filter: saturate(150%);
 }
-.imageWrapper img{
+
+.imageWrapper img {
   border-radius: 16px;
   background: #917BAE;
   object-fit: contain;
   width: 100%;
 }
 
-.objectDataPane{
+.objectDataPane {
   position: absolute;
   width: calc(100% - 60px);
   left: 100%;
@@ -215,21 +401,73 @@ a:hover::before {
   padding: 0 30px 50px 30px;
   transition: all .3s;
 }
-.objectPaneStickyTop{
+
+.objectPaneStickyTop {
   position: sticky;
-  top:0px;
-  padding-top:30px;
+  top: 0px;
+  padding-top: 30px;
   background-color: #2B1944;
 }
-.objectDataPanebackButton{
+
+.objectDataPanebackButton {
   position: relative;
   margin-bottom: 20px;
 }
-.objectDataTitle{
+
+.objectDataTitle {
   font-family: ABeeZee;
   font-size: 32px;
 }
-.objectDataText{
+
+.objectDataText {
   font-family: Cantarell;
   font-size: 18px;
+}
+
+.learnPageGrid {
+  width: min-content;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 25px;
+  margin: auto auto;
+}
+
+.subjectCard {
+  box-sizing: border-box;
+  width: 394px;
+  height: 313px;
+  border-radius: 8px;
+  border: solid white 2px;
+  padding: 20px;
+  position: relative;
+  background: radial-gradient(ellipse, rgba(66, 29, 117, 0.101) 0%, rgba(51, 13, 67, 0.644) 100%);
+  background-blend-mode: normal;
+  backdrop-filter: blur(50px);
+}
+
+.subjectCard h3 {
+  margin: 0;
+  font-family: Bebas Neue;
+  font-size: 64px;
+  font-weight: 100;
+  max-width: 80%;
+}
+
+.subjectCardImageWrapper {
+  height: 53%;
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+}
+
+.subjectCardImageWrapper img {
+  object-fit: contain;
+  position: relative;
+  height: 100%;
+  width: 100%;
+  bottom: 0;
+  right: 0;
+  -webkit-filter: invert(100%);
+  /* Safari/Chrome */
+  filter: invert(100%);
 }
