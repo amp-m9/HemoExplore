@@ -25,6 +25,9 @@ const Home: Component = () => {
                 </div>
             </div>
             <button id="backButton" class={styles.backButton}>back</button>
+            <p class={styles.credits}>
+                sounds from <a href='https://www.zapsplat.com/'>zapsplat.com</a>
+            </p>
         </div>
     );
 };

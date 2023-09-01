@@ -79,7 +79,7 @@
   cursor: pointer;
 }
 
-.navbar a::before {
+nav a::before {
   content: '';
   position: absolute;
   width: 100%;
@@ -97,6 +97,11 @@ a.active::before {
   transform-origin: center;
   transform: scaleX(.9);
   background-color: #EB3447;
+}
+
+.activeHome img {
+  /* filter: invert(65%) sepia(71%) saturate(5580%) hue-rotate(332deg) brightness(91%) contrast(103%); */
+  filter: brightness(0) invert(35%) sepia(29%) saturate(5580%) hue-rotate(332deg) brightness(91%) contrast(103%);
 }
 
 .learnPage {
@@ -201,9 +206,9 @@ a.active::before {
 }
 
 .subtitles {
-
   z-index: -1;
   max-width: 70%;
+  /* width: max-content; */
   position: fixed;
   left: 50%;
   bottom: 20px;
@@ -213,8 +218,17 @@ a.active::before {
   text-align: center;
   font-size: large;
   padding: 5px;
+  transition: all linear .2s;
 }
 
+.credits {
+  position: fixed;
+  z-index: 10000;
+  color: #ffffff;
+  bottom: 20px;
+  right: 35px;
+  opacity: .8;
+}
 
 .inspectorUI {
   position: absolute;
@@ -309,7 +323,8 @@ a.active::before {
   cursor: pointer;
 }
 
-.homeBody a::before {
+.homeBody a::before,
+nav a::before {
   content: '';
   position: absolute;
   width: 100%;
@@ -323,7 +338,8 @@ a.active::before {
   transition: transform .3s ease-in-out;
 }
 
-a:hover::before {
+.homeBody a:hover::before,
+nav a:hover::before {
   transform-origin: center;
   transform: scaleX(1);
 }

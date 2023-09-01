@@ -6,7 +6,7 @@ const part1_2 = "Our voyage takes us to the incredible world of oxygen and its v
 
 const part2_1 = "Moving forward, let's explore the process of oxygen exchange. In the lungs, oxygen binds with hemoglobin within red blood cells, forming a partnership that will sustain us throughout our journey.";
 
-const part3_1 = "Narrator: As we continue, let's delve into the causes of anaemia. Anaemia occurs when our body lacks enough healthy red blood cells or hemoglobin to carry sufficient oxygen.";
+const part3_1 = "As we continue, let's delve into the causes of anaemia. Anaemia occurs when our body lacks enough healthy red blood cells or hemoglobin to carry sufficient oxygen.";
 
 export namespace journey {
     let timeline: gsap.core.Timeline;
@@ -14,11 +14,14 @@ export namespace journey {
     let controller: AbortController;
     let index = 0;
 
+
     export function init() {
         timeline = gsap.timeline();
         utterance = new SpeechSynthesisUtterance();
         controller = new AbortController();
         utterance.voice = window.speechSynthesis.getVoices()[0];
+        setSubtitles('');
+        journey.stop();
     }
 
     export function start() {
@@ -51,10 +54,11 @@ export namespace journey {
         const speech = convertStringToSubtitleArray(part3_1);
         narrate(speech);
     }
-    export function stopAndQuit() {
+    export function stop() {
         window.speechSynthesis.pause()
         window.speechSynthesis.cancel()
         controller.abort();
+        setSubtitles('');
     }
 
 
@@ -70,9 +74,9 @@ export namespace journey {
 
     function setUtterance(textArr: string[], onEnd?: () => any) {
         return () => {
-            setSubtitles('')
             index = index + 1;
             if (!(index < textArr.length)) {
+                setSubtitles('')
                 controller.abort();
                 if (typeof onEnd !== 'undefined')
                     onEnd();
@@ -86,13 +90,12 @@ export namespace journey {
 
     function setSubtitles(text: string) {
         const p = document.getElementById('subtitles') as HTMLParagraphElement;
-        if (text.trimEnd().trimStart().length == 0)
-            p.style.display = 'none';
+        if (text.trimEnd().trimStart().length == 0) {
+            p.style.opacity = '0';
+            return;
+        }
 
-        else
-            p.style.display = 'block';
-
-
+        p.style.opacity = '1';
         p.innerHTML = text;
     }
 

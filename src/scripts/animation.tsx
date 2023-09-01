@@ -13,6 +13,8 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { SIOController, SceneInteractiveObject } from "./SIOController";
 import { exitQuiz, initQuiz, showQuestion } from "./quizQuestions";
 import { journey } from "./journeyAnimation";
+import ambientAudioFile from "../assets/sound/zapsplat_nature_underwater_ambience_flowing_current_deep_002_30535.mp3"
+import heartbeatAudioFile from "../assets/sound/zapsplat_human_heartbeat_single_26493.mp3";
 
 interface CellData {
     offset: THREE.Vector3;
@@ -56,6 +58,8 @@ let outerVesselMesh: THREE.Mesh;
 let innerVesselMesh: THREE.Mesh;
 let bloodCellRotation = 0;
 const mainCellRotationAxis = new THREE.Vector3(1, 1, 0).normalize();
+let ambientSound: THREE.Audio;
+let heartbeatSound: THREE.Audio
 
 let sevenTone: THREE.Texture;
 let fiveTone: THREE.Texture;
@@ -125,7 +129,7 @@ export function initBloodCellAnimation() {
     createAndAddMainCurveToScene();
 
     initialiseCamera();
-
+    initialiseAudio();
     loadGradientMaps();
     loadBloodCellModels();
     setUpLighting();
@@ -552,8 +556,13 @@ function updateBloodCells() {
     bloodCellInstances.castShadow = true;
 
     bloodCellRotation += 0.0001 * loopSettings.speed;
-    relativeVelocity -= 0.04 * loopSettings.speed;
-    if (relativeVelocity < 1.009) relativeVelocity = 3.5;
+    relativeVelocity -= 0.02 * loopSettings.speed;
+    if (relativeVelocity < 1.009) {
+        relativeVelocity = 3.5;
+        if (heartbeatSound.isPlaying)
+            heartbeatSound.stop();
+        heartbeatSound.play();
+    }
 }
 
 export const getRandom = (min: number, max: number) => Math.random() * (max - min) + min;
@@ -682,6 +691,7 @@ export function startJourney() {
 
 export function backToIdle() {
     exitQuiz();
+    journey.stop();
     const homeContainer = document.getElementById(
         "homeContainer"
     ) as HTMLDivElement;
@@ -1228,5 +1238,35 @@ export function enableCompare() {
 
     // mainCell.mesh.material.clipIntersection = true;
     scene.add(mainCell.group);
+}
+
+function initialiseAudio() {
+    const listener = new THREE.AudioListener();
+    camera.add(listener);
+
+    ambientSound = new THREE.Audio(listener);
+    heartbeatSound = new THREE.Audio(listener);
+    console.log(heartbeatSound.buffer);
+
+
+
+    const audioLoader = new THREE.AudioLoader();
+
+    audioLoader.load(ambientAudioFile, (buffer) => {
+        ambientSound.setBuffer(buffer);
+        ambientSound.setLoop(true);
+        ambientSound.setVolume(0.7);
+        ambientSound.play();
+    })
+
+    audioLoader.load(heartbeatAudioFile, (buffer) => {
+        heartbeatSound.setBuffer(buffer);
+        heartbeatSound.setLoop(false);
+        heartbeatSound.setVolume(0.7);
+        // ambientSound.play();
+    })
+
+
+
 }
 
