@@ -12,6 +12,7 @@ import { clamp } from "three/src/math/MathUtils";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { SIOController, SceneInteractiveObject } from "./SIOController";
 import { exitQuiz, initQuiz, showQuestion } from "./quizQuestions";
+import { journey } from "./journeyAnimation";
 
 interface CellData {
     offset: THREE.Vector3;
@@ -78,7 +79,6 @@ const upAxis = new THREE.Vector3(0, 1, 0);
 const defaultEase = { ease: "expo.inOut" };
 
 const curvePointCount = 300;
-let curveMesh: THREE.Line;
 let orbitControls: OrbitControls;
 let orbitalControlsRelativePosition = new THREE.Vector3();
 const loopSettings = {
@@ -129,12 +129,12 @@ export function initBloodCellAnimation() {
     loadGradientMaps();
     loadBloodCellModels();
     setUpLighting();
-
+    journey.init();
     activeAnimation = () => idleAnimation();
 
     const loop = (time: number) => {
         stats.update();
-        let delta = time - loopSettings.timePassed;
+        const delta = time - loopSettings.timePassed;
         loopSettings.timePassed = time;
         renderer.render(scene, camera);
         textRenderer.render(scene, camera);
@@ -279,11 +279,11 @@ function createAndAddMainCurveToScene() {
         dashSize: 4,
     });
 
-    const geometry = new THREE.BufferGeometry().setFromPoints(curvePoints);
-    curveMesh = new THREE.Line(geometry, material);
-    curveMesh.computeLineDistances();
+    // const geometry = new THREE.BufferGeometry().setFromPoints(curvePoints);
+    // curveMesh = new THREE.Line(geometry, material);
+    // curveMesh.computeLineDistances();
 
-    scene.add(curveMesh);
+    // scene.add(curveMesh);
 }
 
 function intialiseOrbitControls() {
@@ -661,24 +661,23 @@ export function startJourney() {
                 },
             },
             "start"
-        )
-
-        .to(
-            curveMesh.material,
-            {
-                opacity: 0.4,
-                duration: 2,
-                delay: 0,
-                ...defaultEase,
-            },
-            "start"
         );
+
+    // .to(
+    //     curveMesh.material,
+    //     {
+    //         opacity: 0.4,
+    //         duration: 2,
+    //         delay: 0,
+    //         ...defaultEase,
+    //     },
+    //     "start"
+    // );
 
     timeline.play("start").then(() => {
         timeline.kill();
+        journey.start();
     });
-    initQuiz();
-    showQuestion(0);
 }
 
 export function backToIdle() {
@@ -768,11 +767,6 @@ export function backToIdle() {
         activeAnimation = idleAnimation;
         loopSettings.speed = 1;
     });
-}
-
-function addIfNotInScene(object: THREE.Object3D) {
-    if (scene.getObjectById(object.id)) return;
-    scene.add(object);
 }
 
 
@@ -895,13 +889,13 @@ function inspectRedBloodCell(): any {
             "zoomOut"
         )
 
-        .to(curveMesh.material,
-            {
-                opacity: 0,
-                duration: zoomOutDuration / 2,
-            },
-            "zoomOut"
-        )
+        // .to(curveMesh.material,
+        //     {
+        //         opacity: 0,
+        //         duration: zoomOutDuration / 2,
+        //     },
+        //     "zoomOut"
+        // )
         .to(canvasPercentage,
             {
                 x: 0.7,
@@ -938,7 +932,7 @@ function inspectRedBloodCell(): any {
                         bloodCellInstances,
                         innerVesselMesh,
                         outerVesselMesh,
-                        curveMesh
+                        // curveMesh
                     );
                 },
             },
@@ -1021,7 +1015,7 @@ function backToActiveStreamAnimation() {
                     scene.add(bloodCellInstances);
                     scene.add(innerVesselMesh);
                     scene.add(outerVesselMesh);
-                    scene.add(curveMesh);
+                    // scene.add(curveMesh);
                 },
             },
             "backToStream"
@@ -1109,16 +1103,16 @@ function backToActiveStreamAnimation() {
                 duration: backToStreamDuration / 4,
             },
             "backToStream"
-        )
-
-        .to(
-            curveMesh.material,
-            {
-                opacity: 1,
-                duration: backToStreamDuration / 4,
-            },
-            "backToStream"
         );
+
+    // .to(
+    //     curveMesh.material,
+    //     {
+    //         opacity: 1,
+    //         duration: backToStreamDuration / 4,
+    //     },
+    //     "backToStream"
+    // );
 
     timeline.play().then(() => {
         backButton.onclick = function () {

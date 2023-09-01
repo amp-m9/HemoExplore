@@ -5,7 +5,12 @@ import styles from '../App.module.css'
 const Background: Component = () => {
     onMount(initBloodCellAnimation);
     return (
-        <canvas class={`webgl ${styles.background}`} id='animationContainer' />
+        <div>
+            <canvas class={`webgl ${styles.background}`} id='animationContainer' />
+            <p id="subtitles" class={styles.subtitles} innerHTML="TESTING TESTING" />
+            {/* <div id='subtitlesContainer' class={styles.subtitlesContainer}> */}
+            {/* </div> */}
+        </div>
     )
 }
 
