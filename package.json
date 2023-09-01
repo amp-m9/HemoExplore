@@ -4,7 +4,6 @@
   "repository": {
     "url": "git+https://github.com/amp-m9/HemoExplore.git"
   },
- 
   "description": "",
   "scripts": {
     "start": "vite",
@@ -12,7 +11,6 @@
     "build": "vite build",
     "serve": "vite preview",
     "deploy": "gh-pages -d dist"
-
   },
   "license": "MIT",
   "devDependencies": {
@@ -23,10 +21,12 @@
     "vite-plugin-solid": "^2.7.0"
   },
   "dependencies": {
+    "@solidjs/router": "^0.8.2",
     "@types/dat.gui": "^0.7.10",
     "@types/three": "^0.154.0",
     "dat.gui": "^0.7.9",
     "gsap": "^3.12.2",
+    "micromark": "^4.0.0",
     "noisejs": "^2.1.0",
     "simplex-noise": "^4.0.1",
     "solid-js": "^1.7.6",
