@@ -65,6 +65,9 @@ let inspectorActiveMainCell: BloodCell;
 
 let firstBloodVessel: BloodVessel = { innerVesselMesh: undefined, outerVesselMesh: undefined, path: undefined } as unknown as BloodVessel;
 let secondBloodVessel: BloodVessel = { innerVesselMesh: undefined, outerVesselMesh: undefined, path: undefined } as unknown as BloodVessel;
+let vesselIndex = 0;
+let entryOverlap = 0;
+let vesselArray = [firstBloodVessel, secondBloodVessel];
 let outerVesselMaterial: THREE.MeshToonMaterial;
 let innerVesselMaterial: THREE.MeshToonMaterial;
 let cloneVesselMaterial: THREE.MeshToonMaterial;
@@ -192,7 +195,7 @@ const activeStreamAnimation = () => {
 };
 
 function initialiseCamera() {
-    const camStart = firstBloodVessel.path.getPoint(0);
+    const camStart = vesselArray[vesselIndex].path.getPoint(0);
     camera.position.set(0, 0, -4);
     camera.lookAt(0, 0, 0);
     camStart.z += 0.01;
@@ -291,7 +294,7 @@ function loadGradientMaps() {
 function createAndAddMainCurveToScene() {
     lastVesselCurvePoints = generateVesselCurve(0, 0, 0, curvePointCount);
     incrementNoiseStart();
-    firstBloodVessel.path = new THREE.CatmullRomCurve3(lastVesselCurvePoints);
+    vesselArray[vesselIndex].path = new THREE.CatmullRomCurve3(lastVesselCurvePoints);
 }
 
 function intialiseOrbitControls() {
@@ -394,7 +397,7 @@ function setUpBloodVessels(fiveTone: THREE.Texture, threeTone: THREE.Texture) {
     };
 
     const outerVesselGeometry = new THREE.TubeGeometry(
-        firstBloodVessel.path,
+        vesselArray[vesselIndex].path,
         tubularSegments,
         outerWallRadius,
         radialSegments
@@ -403,7 +406,7 @@ function setUpBloodVessels(fiveTone: THREE.Texture, threeTone: THREE.Texture) {
         outerWalltoonOptions
     );
 
-    firstBloodVessel.outerVesselMesh = new THREE.Mesh(outerVesselGeometry, outerVesselMaterial);
+    vesselArray[vesselIndex].outerVesselMesh = new THREE.Mesh(outerVesselGeometry, outerVesselMaterial);
 
     // inner blood vessel
     const innerWalltoonOptions: THREE.MeshToonMaterialParameters = {
@@ -422,7 +425,7 @@ function setUpBloodVessels(fiveTone: THREE.Texture, threeTone: THREE.Texture) {
     };
 
     const innerVesselGeometry = new THREE.TubeGeometry(
-        firstBloodVessel.path,
+        vesselArray[vesselIndex].path,
         tubularSegments,
         innerWallRadius,
         radialSegments
@@ -430,11 +433,11 @@ function setUpBloodVessels(fiveTone: THREE.Texture, threeTone: THREE.Texture) {
     innerVesselMaterial = new THREE.MeshToonMaterial(innerWalltoonOptions);
     cloneVesselMaterial = new THREE.MeshToonMaterial(cloneInnerToonOptions);
 
-    firstBloodVessel.innerVesselMesh = new THREE.Mesh(innerVesselGeometry, innerVesselMaterial);
-    firstBloodVessel.innerVesselMesh.receiveShadow = true;
+    vesselArray[vesselIndex].innerVesselMesh = new THREE.Mesh(innerVesselGeometry, innerVesselMaterial);
+    vesselArray[vesselIndex].innerVesselMesh.receiveShadow = true;
 
-    scene.add(firstBloodVessel.outerVesselMesh);
-    scene.add(firstBloodVessel.innerVesselMesh);
+    scene.add(vesselArray[vesselIndex].outerVesselMesh);
+    scene.add(vesselArray[vesselIndex].innerVesselMesh);
 }
 
 function setUpLighting() {
@@ -544,16 +547,21 @@ function updateBackgroundCells() {
     let data: CellData;
     for (let i = 0; i < redBloodCellCount; i++) {
         data = redBloodCellData[i];
-
-        const start = firstBloodVessel.path.getPoint(data.progress);
-
+        const lastProg = data.progress
         data.progress += data.velocity * relativeVelocity * loopSettings.speed;
-        data.progress %= 1;
+        if (lastProg < 1 && !(data.progress < 1))
+            data.progress += entryOverlap;
+        data.progress %= 2;
 
+
+        const inSecondTube = data.progress > 1;
         redBloodCellData[i] = data;
+        const index = inSecondTube ? (vesselIndex + 1) % 2 : vesselIndex;
+        const progress = inSecondTube ? (data.progress % 1) : data.progress
 
+        const start = vesselArray[index].path.getPoint(progress);
         dummy.position.copy(start);
-        dummy.lookAt(firstBloodVessel.path.getPoint(data.progress + 0.00001));
+        dummy.lookAt(vesselArray[index].path.getPoint(progress + 0.00001));
         dummy.position.copy(dummy.localToWorld(data.offset.clone()));
 
         const sign = i % 2 == 0 ? -i : i;
@@ -566,7 +574,7 @@ function updateBackgroundCells() {
 }
 
 function updateMainBloodCell() {
-    let point = firstBloodVessel.path.getPoint(mainCell.progress);
+    let point = vesselArray[vesselIndex].path.getPoint(mainCell.progress);
     mainCell.progress += mainCell.velocity * relativeVelocity * loopSettings.speed;
     if (mainCell.progress < .5 && genNext) {
         mainCell.progress = .5;
@@ -602,33 +610,9 @@ function incrementNoiseStart() {
 function generateNextVessel() {
     if (!window.Worker || !genNext)
         return;
-    if (firstBloodVessel.innerVesselMesh != undefined) {
-        // const vesselGenWorker = new Worker(tubeBuilder, { type: "module" });
-        // genNext = false;
-
-        // const { path } = firstBloodVessel;
-        // const points = lastVesselCurvePoints.slice(-2).map(p => p.toArray())
-        // console.log('points sent', points);
-
-        // const message: tubeGenSendMessage = {
-        //     endOfTube: points,
-        //     noiseStart: noiseStart,
-        //     curvePointCount: curvePointCount,
-        //     innerWallRadius: innerWallRadius,
-        //     outerWallRadius: outerWallRadius,
-        //     tubularSegments: tubularSegments,
-        //     radialSegments: radialSegments,
-        // };
-
-        // vesselGenWorker.addEventListener('message', function (e: MessageEvent<tubeGenReceiveMessage>) {
-        //     console.log(e.data);
-        //     onTubeReceived(e.data);
-        // }, false);
-        // console.log('Sent')
-
-        // vesselGenWorker.postMessage(message);
-
+    if (vesselArray[vesselIndex].innerVesselMesh != undefined) {
         genNext = false;
+        const index = (vesselIndex + 1) % 2
         const points = lastVesselCurvePoints.slice(-2).map(p => p.toArray());
 
         const pathPoints = generateVesselCurveFromStartPoints(points, curvePointCount, noiseStart);
@@ -640,7 +624,13 @@ function generateNextVessel() {
             innerWallRadius,
             radialSegments
         );
-        secondBloodVessel.innerVesselMesh = new THREE.Mesh(innerVesselGeometry, cloneVesselMaterial);
+        vesselArray[index].innerVesselMesh = new THREE.Mesh(innerVesselGeometry, cloneVesselMaterial);
+        vesselArray[index].path = path;
+        const pathDiffLength = path.getPoint(0).sub(vesselArray[vesselIndex].path.getPoint(1)).length();
+        entryOverlap = pathDiffLength / path.getLength();
+        console.log("Length ", path.getLength());
+        console.log("overlap ", entryOverlap);
+
         scene.add(secondBloodVessel.innerVesselMesh);
         incrementNoiseStart();
     }
@@ -675,7 +665,7 @@ function updateCamera() {
 
 function adjustCameraForTransforms() {
     let prog = clamp(mainCell.progress - 0.007, 0, 1);
-    const cameraPos = firstBloodVessel.path.getPoint(prog);
+    const cameraPos = vesselArray[vesselIndex].path.getPoint(prog);
     camera.position.copy(cameraPos);
     const cameraLookAt = mainCell.group.position.clone();
     camera.lookAt(...cameraLookAt.toArray());
@@ -683,9 +673,9 @@ function adjustCameraForTransforms() {
 
 function adjustDummyForLights() {
     let prog = clamp(mainCell.progress - 0.007, 0, 1);
-    const position = firstBloodVessel.path.getPoint(prog);
+    const position = vesselArray[vesselIndex].path.getPoint(prog);
     lightingDummy.position.copy(position);
-    const lookAt = firstBloodVessel.path.getPoint(mainCell.progress);
+    const lookAt = vesselArray[vesselIndex].path.getPoint(mainCell.progress);
     lightingDummy.lookAt(...lookAt.toArray());
     lightingDummy.updateMatrix();
     lightingDummy.updateMatrixWorld(true);
@@ -695,7 +685,7 @@ function updateLighting() {
     adjustDummyForLights();
 
     let prog = clamp(mainCell.progress - 0.007, 0, 1);
-    const anchor = firstBloodVessel.path.getPoint(prog);
+    const anchor = vesselArray[vesselIndex].path.getPoint(prog);
 
     const spotlightPosition = lightingDummy.localToWorld(
         spotlightOffSet.clone()
@@ -837,7 +827,7 @@ export function backToIdle() {
         progress += deltaTime / 1000;
         progress = clamp(progress, 0, 1);
 
-        const destination = firstBloodVessel.path.getPoint(mainCell.progress - 0.007);
+        const destination = vesselArray[vesselIndex].path.getPoint(mainCell.progress - 0.007);
         const source = new THREE.Vector3();
         camera.getWorldPosition(source);
         const direction = destination.clone().sub(source);
@@ -977,7 +967,7 @@ function inspectRedBloodCell(): any {
             "zoomOut"
         )
 
-        .to(firstBloodVessel.outerVesselMesh.material,
+        .to(vesselArray[vesselIndex].outerVesselMesh.material,
             {
                 opacity: 0,
                 duration: zoomOutDuration / 2,
@@ -985,7 +975,7 @@ function inspectRedBloodCell(): any {
             "zoomOut"
         )
 
-        .to(firstBloodVessel.innerVesselMesh.material,
+        .to(vesselArray[vesselIndex].innerVesselMesh.material,
             {
                 opacity: 0,
                 duration: zoomOutDuration / 2,
@@ -1034,8 +1024,8 @@ function inspectRedBloodCell(): any {
                     slowRevealCrossSection();
                     scene.remove(
                         bloodCellInstances,
-                        firstBloodVessel.innerVesselMesh,
-                        firstBloodVessel.outerVesselMesh,
+                        vesselArray[vesselIndex].innerVesselMesh,
+                        vesselArray[vesselIndex].outerVesselMesh,
                         // curveMesh
                     );
                 },
@@ -1090,7 +1080,7 @@ function backToActiveStreamAnimation() {
         Math.PI * getRandom(0, 2),
         Math.PI * getRandom(0, 2)
     );
-    const mainCellPos = firstBloodVessel.path.getPoint(mainCell.progress);
+    const mainCellPos = vesselArray[vesselIndex].path.getPoint(mainCell.progress);
 
     timeline
         .to(
@@ -1117,8 +1107,8 @@ function backToActiveStreamAnimation() {
                     // @ts-ignore
                     mainCell.mesh.material.gradientMap = sevenTone;
                     scene.add(bloodCellInstances);
-                    scene.add(firstBloodVessel.innerVesselMesh);
-                    scene.add(firstBloodVessel.outerVesselMesh);
+                    scene.add(vesselArray[vesselIndex].innerVesselMesh);
+                    scene.add(vesselArray[vesselIndex].outerVesselMesh);
                     // scene.add(curveMesh);
                 },
             },
@@ -1188,12 +1178,12 @@ function backToActiveStreamAnimation() {
         )
 
         .to(
-            firstBloodVessel.outerVesselMesh.material,
+            vesselArray[vesselIndex].outerVesselMesh.material,
             {
                 opacity: 1,
                 duration: backToStreamDuration / 4,
                 onComplete: function () {
-                    firstBloodVessel.outerVesselMesh.material.transparent = false;
+                    vesselArray[vesselIndex].outerVesselMesh.material.transparent = false;
                     bloodCellInstances.material.transparent = false;
                 },
             },
@@ -1201,7 +1191,7 @@ function backToActiveStreamAnimation() {
         )
 
         .to(
-            firstBloodVessel.innerVesselMesh.material,
+            vesselArray[vesselIndex].innerVesselMesh.material,
             {
                 opacity: 0.4,
                 duration: backToStreamDuration / 4,
@@ -1341,7 +1331,6 @@ function initialiseAudio() {
     ambientSound = new THREE.Audio(listener);
     heartbeatSound = new THREE.Audio(listener);
     console.log(heartbeatSound.buffer);
-
 
 
     const audioLoader = new THREE.AudioLoader();
