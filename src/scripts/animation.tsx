@@ -322,6 +322,7 @@ function createAndAddMainBloodCell(
     mainCell.group = generatedCell.group.remove(generatedCell.haemoglobin).add(mainCell.highlight);
     mainCell.haemoglobin = generatedCell.haemoglobin;
     scene.add(mainCell.group);
+    mainCell.progress = .8;
 }
 
 function createBloodCell(
@@ -502,10 +503,10 @@ function setUpRenderer() {
     initialiseTextRenderer();
 
     scene = new THREE.Scene();
-    // scene.fog = new THREE.Fog(fogColor, 5, 170);
+    scene.fog = new THREE.Fog(fogColor, 4.7, 170);
 
     const nearPane = 0.1;
-    const farPane = 1600;
+    const farPane = 160;
     camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, nearPane, farPane);
 
     window.addEventListener("resize", onWindowResize, false);
@@ -542,6 +543,7 @@ function updateBloodCells() {
     updateBackgroundCells();
     updateMainBloodCell();
 }
+const tubeCount = () => vesselArray[1].path == undefined ? 1 : 2;
 
 function updateBackgroundCells() {
     let data: CellData;
@@ -551,7 +553,7 @@ function updateBackgroundCells() {
         data.progress += data.velocity * relativeVelocity * loopSettings.speed;
         if (lastProg < 1 && !(data.progress < 1))
             data.progress += entryOverlap;
-        data.progress %= 2;
+        data.progress %= tubeCount();
 
 
         const inSecondTube = data.progress > 1;
@@ -574,17 +576,25 @@ function updateBackgroundCells() {
 }
 
 function updateMainBloodCell() {
-    let point = vesselArray[vesselIndex].path.getPoint(mainCell.progress);
+    const lastProg = mainCell.progress;
     mainCell.progress += mainCell.velocity * relativeVelocity * loopSettings.speed;
-    if (mainCell.progress < .5 && genNext) {
-        mainCell.progress = .5;
-    }
+    if (lastProg < 1 && !(mainCell.progress < 1))
+        mainCell.progress += entryOverlap;
+
+    mainCell.progress %= tubeCount();
+
+    const inSecondTube = mainCell.progress > 1;
+    const index = inSecondTube ? (vesselIndex + 1) % 2 : vesselIndex;
+    const progress = inSecondTube ? (mainCell.progress % 1) : mainCell.progress
+
+
+
+    let point = vesselArray[index].path.getPoint(progress);
+    mainCell.group.position.set(point.x, point.y, point.z);
+
     if (mainCell.progress > .5 && genNext) {
         generateNextVessel();
     }
-    mainCell.progress = .99
-    mainCell.progress = mainCell.progress % 1;
-    mainCell.group.position.set(point.x, point.y, point.z);
 
     const rotation = (Math.PI / 200 + Math.PI * loopSettings.step) * loopSettings.speed;
     mainCell.mesh.rotateOnAxis(mainCellRotationAxis, rotation);
