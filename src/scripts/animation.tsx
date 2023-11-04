@@ -9,7 +9,7 @@ import { createNoise2D } from "simplex-noise";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import styles from "../App.module.css";
 import gsap from "gsap";
-import { clamp } from "three/src/math/MathUtils";
+import { clamp, randFloat, randInt } from "three/src/math/MathUtils";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { SIOController, SceneInteractiveObject } from "./SIOController";
 import { exitQuiz, initQuiz, showQuestion } from "./quizQuestions";
@@ -322,7 +322,7 @@ function createAndAddMainBloodCell(
     mainCell.group = generatedCell.group.remove(generatedCell.haemoglobin).add(mainCell.highlight);
     mainCell.haemoglobin = generatedCell.haemoglobin;
     scene.add(mainCell.group);
-    mainCell.progress = .8;
+    mainCell.progress = .5;
 }
 
 function createBloodCell(
@@ -439,6 +439,7 @@ function setUpBloodVessels(fiveTone: THREE.Texture, threeTone: THREE.Texture) {
 
     scene.add(vesselArray[vesselIndex].outerVesselMesh);
     scene.add(vesselArray[vesselIndex].innerVesselMesh);
+    generateNextVessel(1);
 }
 
 function setUpLighting() {
@@ -592,8 +593,9 @@ function updateMainBloodCell() {
     let point = vesselArray[index].path.getPoint(progress);
     mainCell.group.position.set(point.x, point.y, point.z);
 
-    if (mainCell.progress > .5 && genNext) {
-        generateNextVessel();
+    if (mainCell.progress > 1.5) {
+        generateNextVessel(vesselIndex);
+        updateVesselIndexesAndCellProgress();
     }
 
     const rotation = (Math.PI / 200 + Math.PI * loopSettings.step) * loopSettings.speed;
@@ -617,15 +619,14 @@ function incrementNoiseStart() {
     noiseStart += (curvePointCount * 2) + 1;
 }
 
-function generateNextVessel() {
-    if (!window.Worker || !genNext)
-        return;
+function generateNextVessel(indexToReplace: number) {
     if (vesselArray[vesselIndex].innerVesselMesh != undefined) {
         genNext = false;
-        const index = (vesselIndex + 1) % 2
-        const points = lastVesselCurvePoints.slice(-2).map(p => p.toArray());
+        const index = indexToReplace;
+        const endOfCurrentVesselPoints = lastVesselCurvePoints.slice(-2).map(p => p.toArray());
 
-        const pathPoints = generateVesselCurveFromStartPoints(points, curvePointCount, noiseStart);
+        const pathPoints = generateVesselCurveFromStartPoints(endOfCurrentVesselPoints, curvePointCount, noiseStart);
+        lastVesselCurvePoints = pathPoints;
         const path = new THREE.CatmullRomCurve3(pathPoints);
 
         const innerVesselGeometry = new THREE.TubeGeometry(
@@ -634,18 +635,27 @@ function generateNextVessel() {
             innerWallRadius,
             radialSegments
         );
-        vesselArray[index].innerVesselMesh = new THREE.Mesh(innerVesselGeometry, cloneVesselMaterial);
+        const copy = cloneVesselMaterial.clone();
+        copy.color.set(randFloat(0, 1), randFloat(0, 1), randFloat(0, 1));
+        vesselArray[index].innerVesselMesh = new THREE.Mesh(innerVesselGeometry, copy);
         vesselArray[index].path = path;
-        const pathDiffLength = path.getPoint(0).sub(vesselArray[vesselIndex].path.getPoint(1)).length();
+        const pathDiffLength = path.getPoint(0).sub(vesselArray[clamp(index + 1, 0, 2) % 2].path.getPoint(1)).length();
         entryOverlap = pathDiffLength / path.getLength();
         console.log("Length ", path.getLength());
         console.log("overlap ", entryOverlap);
-
-        scene.add(secondBloodVessel.innerVesselMesh);
+        scene.add(vesselArray[index].innerVesselMesh);
         incrementNoiseStart();
     }
 }
+function updateVesselIndexesAndCellProgress() {
+    vesselIndex = (vesselIndex + 1) % 2;
+    mainCell.progress = clamp(mainCell.progress - 1, 0, 2)
+    redBloodCellData = redBloodCellData.map(data => {
+        data.progress = clamp(data.progress - 1, 0, 2)
+        return data;
+    })
 
+}
 function onTubeReceived(tubeData: tubeGenReceiveMessage) {
     incrementNoiseStart();
     const { innerTubeIndexAttrib, innerTubePositionAttrib, pathPoints } = tubeData
@@ -664,7 +674,7 @@ function onTubeReceived(tubeData: tubeGenReceiveMessage) {
 }
 
 function updateCamera() {
-    adjustCameraForTransforms();
+    adjustObjectForTransform(camera);
     camera.position.copy(
         camera.localToWorld(new THREE.Vector3(0, camSettings.camTranslateY, 0))
     );
@@ -673,26 +683,24 @@ function updateCamera() {
     camera.lookAt(camera.localToWorld(new THREE.Vector3(0, 0, -10))); // or else ray caster is broken
 }
 
-function adjustCameraForTransforms() {
-    let prog = clamp(mainCell.progress - 0.007, 0, 1);
-    const cameraPos = vesselArray[vesselIndex].path.getPoint(prog);
-    camera.position.copy(cameraPos);
-    const cameraLookAt = mainCell.group.position.clone();
-    camera.lookAt(...cameraLookAt.toArray());
-}
+function adjustObjectForTransform(object: THREE.Object3D) {
+    let cameraProg = mainCell.progress - 0.007
+    if (cameraProg < 1 && mainCell.progress >= 1)
+        cameraProg -= entryOverlap
+    const inSecondTube = cameraProg > 1;
+    const index = inSecondTube ? (vesselIndex + 1) % 2 : vesselIndex;
 
-function adjustDummyForLights() {
-    let prog = clamp(mainCell.progress - 0.007, 0, 1);
-    const position = vesselArray[vesselIndex].path.getPoint(prog);
-    lightingDummy.position.copy(position);
-    const lookAt = vesselArray[vesselIndex].path.getPoint(mainCell.progress);
-    lightingDummy.lookAt(...lookAt.toArray());
-    lightingDummy.updateMatrix();
-    lightingDummy.updateMatrixWorld(true);
+    let prog = inSecondTube ? cameraProg % 1 : cameraProg;
+    const cameraPos = vesselArray[index].path.getPoint(prog);
+    object.position.copy(cameraPos);
+    const cameraLookAt = mainCell.group.position.clone();
+    object.lookAt(...cameraLookAt.toArray());
+    object.updateMatrix()
+    object.updateMatrixWorld(true)
 }
 
 function updateLighting() {
-    adjustDummyForLights();
+    adjustObjectForTransform(lightingDummy);
 
     let prog = clamp(mainCell.progress - 0.007, 0, 1);
     const anchor = vesselArray[vesselIndex].path.getPoint(prog);
