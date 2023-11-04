@@ -14,7 +14,7 @@ export function generateVesselCurveFromStartPoints(pathStart:Vector3Tuple[], cur
         const _i = i + noise_offset-1;
         const point = new Vector3(
             noise(_i * 0.001, (_i / 13) * 0.1) * 150, // x
-            noise(_i * 0.001, 0.1), // y
+            noise(_i * 0.001, 0.1)*100, // y
             (_i * 5) // z
         );
         curvePoints[i] = point;
@@ -28,7 +28,7 @@ export function generateVesselCurve(x: number, y: number, z: number, curvePointC
     for (; i < 2 * curvePointCount + 1; i++) {
         const point = new Vector3(
             x + noise(i * 0.001, (i / 13) * 0.1) * 150, // x
-            y + noise(i * 0.001, 0.1),                  // y
+            y + noise(i * 0.001, 0.1) * 100,                  // y
             z + (i * 5)                                 // z
         );
         curvePoints[i] = point;
