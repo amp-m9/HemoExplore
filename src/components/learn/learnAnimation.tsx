@@ -7,7 +7,7 @@ import { createNoise2D } from "simplex-noise";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import styles from "../App.module.css";
 import gsap from "gsap";
-import { clamp } from "three/src/math/MathUtils";
+import { clamp, degToRad } from "three/src/math/MathUtils";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { SIOController, SceneInteractiveObject } from "../../scripts/SIOController";
 
@@ -36,7 +36,7 @@ let threeTone: THREE.Texture;
 const redBloodCellURL = new URL("../../assets/models/redBloodCellPatched.glb", import.meta.url);
 const threeToneURL = new URL("../../assets/gradientMaps/threeTone.jpg", import.meta.url);
 const fiveToneURL = new URL("../../assets/gradientMaps/fiveTone.jpg", import.meta.url);
-const sevenToneURL = new URL("../../assets/gradientMaps/sevenTone.jpg", import.meta.url);
+const sevenToneURL = new URL("../../assets/gradientMaps/sevenTone2.jpg", import.meta.url);
 
 let orbitControls: OrbitControls;
 const loopSettings = {
@@ -91,11 +91,12 @@ export function initialise3DCanvas() {
     };
 
     renderer.setAnimationLoop(loop);
-    renderer.setClearColor(altBgColor);
+    // renderer.setClearColor(altBgColor);
+    renderer.setClearColor(0x000000, 0);
 }
 
 function initialiseCamera() {
-    camera.position.set(0, 1, 1);
+    camera.position.set(1, 1, 0);
     camera.lookAt(0, 0, 0);
     camera.updateMatrix();
 }
@@ -126,17 +127,15 @@ function loadBloodCellModels() {
                 const redBloodCell = createBloodCell(redBloodCellMaterial, bloodCellGeometry, 1, 30);
                 redBloodCell.cell.geometry.computeBoundingBox();
                 const box = redBloodCell.cell.geometry.boundingBox;
-                const center = new THREE.Vector3;
+                const center = new THREE.Vector3();
                 box?.getCenter(center);
-                scene.add(redBloodCell.cell);
-                camera.lookAt(redBloodCell.cell.position);
+                scene.add(redBloodCell.group);
 
 
                 const spotLight = new THREE.SpotLight(0xffffff, .8, 0);
-                spotLight.position.copy(camera.localToWorld(new THREE.Vector3(2, 3, 7)));
+                spotLight.position.set(3, .5, .5);
                 spotLight.lookAt(redBloodCell.cell.position);
-                redBloodCell.cell.position.y -= (center.y / 2)
-                redBloodCell.cell.rotateX(Math.PI / 3);
+                redBloodCell.group.position.y -= (center.y / 2)
                 scene.add(spotLight);
 
 
@@ -173,19 +172,21 @@ function intialiseOrbitControls() {
     orbitControls.maxDistance = 15;
     orbitControls.minDistance = 1;
     orbitControls.enablePan = false;
+    // orbitControls.rotateSpeed = .
     orbitControls.autoRotate = true;
+    orbitControls.autoRotateSpeed = 4;
 
-    const geo = new THREE.SphereGeometry(1);
-    const material = new THREE.MeshBasicMaterial({ side: THREE.BackSide, color: 0xcbcbcb, wireframe: true })
-    const bgMesh = new THREE.Mesh(geo, material);
-    scene.add(bgMesh);
+    // const geo = new THREE.SphereGeometry(1);
+    // const material = new THREE.MeshBasicMaterial({ side: THREE.BackSide, color: 0xcbcbcb, wireframe: true })
+    // const bgMesh = new THREE.Mesh(geo, material);
+    // scene.add(bgMesh);
 
-    orbitControls.addEventListener('change', () => {
-        const camLength = camera.position.length() * 2;
-        if (camLength != bgMesh.scale.y) {
-            bgMesh.scale.set(camLength, camLength, camLength);
-        }
-    })
+    // orbitControls.addEventListener('change', () => {
+    //     const camLength = camera.position.length() * 2;
+    //     if (camLength != 2) {
+    //         cam
+    //     }
+    // })
 }
 
 
@@ -196,12 +197,19 @@ function createBloodCell(
     haemoglobinCount: number
 ) {
     const group = new THREE.Group();
-    const mesh = new THREE.Mesh(geometry, material.clone());
+    const mesh = new THREE.Mesh(geometry, material);
+    const outline = new THREE.MeshBasicMaterial({ side: THREE.BackSide, color: 0xffffff });
+    const outlineMesh = new THREE.Mesh(geometry, outline);
+    const scale2 = 1.06
+    outlineMesh.scale.set(scale2, scale2, scale2);
+    // mesh.rotateX(Math.PI * 3 / 1.9);
     mesh.scale.set(scale, scale, scale);
     const instancedHaemoglobin = (haemoglobinCount > 0) ? generateHeamoglobin(haemoglobinCount, scale) : null;
 
     group.add(mesh);
-    if (instancedHaemoglobin != null) group.add(instancedHaemoglobin);
+    group.add(outlineMesh);
+    // mesh.rotateZ(Math.PI / 9)
+    // if (instancedHaemoglobin != null) group.add(instancedHaemoglobin);
 
     return { cell: mesh, haemoglobin: instancedHaemoglobin, group: group };
 }
@@ -245,12 +253,11 @@ function setUpRenderer() {
     }
 
     const rect = canvas.getBoundingClientRect();
-    renderer = new THREE.WebGLRenderer({ antialias: true, canvas: canvas });
+    renderer = new THREE.WebGLRenderer({ antialias: true, canvas: canvas, alpha: true });
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.shadowMap.enabled = true;
 
     stats = new Stats();
-    // document.body.appendChild(stats.dom);
 
     initialiseTextRenderer();
 
@@ -262,8 +269,6 @@ function setUpRenderer() {
     camera = new THREE.PerspectiveCamera(45, rect.width / rect.height, nearPane, farPane);
 
     const canvasWrapper = (document.getElementById("canvasWrapper") as HTMLDivElement);
-
-    // new ResizeObserver(onCanvasResize).observe(canvasWrapper);
 }
 
 function initialiseTextRenderer() {

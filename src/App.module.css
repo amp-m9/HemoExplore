@@ -1,6 +1,6 @@
 @font-face {
   font-family: "Archive";
-  src: url(./fonts/Archive-Regular.ttf);
+  src: url(./assets/fonts/Archive-Regular.ttf);
   font-style: normal;
   text-rendering: optimizeLegibility;
   font-weight: 500;
@@ -8,7 +8,7 @@
 
 @font-face {
   font-family: "Cantarell";
-  src: url(./fonts/Cantarell-VF.otf);
+  src: url(./assets/fonts/Cantarell-VF.otf);
   font-style: normal;
   text-rendering: optimizeLegibility;
   font-weight: 100 1000;
@@ -16,7 +16,7 @@
 
 @font-face {
   font-family: "ABeeZee";
-  src: url(./fonts/ABeeZee-Regular.ttf);
+  src: url(./assets/fonts/ABeeZee-Regular.ttf);
   font-style: normal;
   text-rendering: optimizeLegibility;
   font-weight: 500;
@@ -24,7 +24,7 @@
 
 @font-face {
   font-family: "Bebas Neue";
-  src: url(./fonts/BebasNeue-Regular.ttf);
+  src: url(./assets/fonts/BebasNeue-Regular.ttf);
   font-style: normal;
   text-rendering: optimizeLegibility;
   font-weight: 400;
@@ -35,6 +35,7 @@
   --leftPanelWidth: 300px;
   --navbarHeight: 74px;
   --learnPanelPaddingTop: 50px;
+  --linkRed: #EB3447
 }
 
 /* learn page  */
@@ -79,30 +80,31 @@
   cursor: pointer;
 }
 
-nav a::before {
-  content: '';
-  position: absolute;
-  width: 100%;
-  height: 2px;
-  border-radius: 4px;
-  background-color: white;
-  bottom: 0;
-  left: 0;
-  transform-origin: center;
-  transform: scaleX(0);
-  transition: transform .3s ease-in-out;
-}
 
 a.active::before {
   transform-origin: center;
   transform: scaleX(.9);
-  background-color: #EB3447;
+  background-color: var(--linkRed);
+}
+
+a {
+  text-decoration: none;
+}
+
+a:visited {
+  color: inherit;
 }
 
 .activeHome img {
-  /* filter: invert(65%) sepia(71%) saturate(5580%) hue-rotate(332deg) brightness(91%) contrast(103%); */
   filter: brightness(0) invert(35%) sepia(29%) saturate(5580%) hue-rotate(332deg) brightness(91%) contrast(103%);
 }
+
+a.activeLink {
+  transition: all .4s;
+  color: var(--linkRed);
+}
+
+
 
 .learnPage {
   background-blend-mode: normal;
@@ -120,7 +122,7 @@ a.active::before {
   width: 100%;
   margin: 0;
   backdrop-filter: blur(4px);
-  background: radial-gradient(circle, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.5) 100%);
+  background: radial-gradient(circle, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0) 100%);
   position: absolute;
   z-index: -1;
   left: 0;
@@ -165,7 +167,7 @@ a.active::before {
 
 .learnPanelMiddle h2 {
   margin: 0 0 45px 0;
-  color: #EB3447;
+  color: var(--linkRed);
   font-family: Cantarell;
   font-size: 18px;
   letter-spacing: 10.2px;
@@ -189,11 +191,16 @@ a.active::before {
 
 .learnPanelRight h3 {
   font-size: 17;
-  color: #EB3447;
+  color: var(--linkRed);
 }
 
 .learnPanelRight p {
   font-size: 15px;
+}
+
+.learnPanelCanvas {
+  box-sizing: border-box;
+  width: 100%;
 }
 
 .background {
@@ -202,7 +209,7 @@ a.active::before {
   z-index: -2;
   right: 0;
   top: 0;
-  background: #EB3447;
+  background: var(--linkRed);
 }
 
 .subtitles {
@@ -323,8 +330,7 @@ a.active::before {
   cursor: pointer;
 }
 
-.homeBody a::before,
-nav a::before {
+.homeBody a::before {
   content: '';
   position: absolute;
   width: 100%;
@@ -465,6 +471,7 @@ nav a:hover::before {
 }
 
 .subjectCard {
+  color: white;
   box-sizing: border-box;
   width: 394px;
   height: 313px;
@@ -475,6 +482,10 @@ nav a:hover::before {
   background: radial-gradient(ellipse, rgba(66, 29, 117, 0.101) 0%, rgba(51, 13, 67, 0.644) 100%);
   background-blend-mode: normal;
   backdrop-filter: blur(50px);
+}
+
+.subjectCard :hover {
+  color: var();
 }
 
 .subjectCard h3 {

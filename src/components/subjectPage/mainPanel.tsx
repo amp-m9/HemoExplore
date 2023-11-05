@@ -7,7 +7,6 @@ import { expandCanvasToWindow, initialise3DCanvas } from '../learn/learnAnimatio
 import { pause } from '../../scripts/animation';
 
 export interface PanelProps {
-    active: boolean,
     title: string | undefined,
     subTitle: string | undefined,
     summary: string | undefined,
@@ -22,43 +21,28 @@ function convertStringToHtmlParagraphs(to: string) {
 }
 
 const MainLearnPanel: Component<PanelProps> = (props) => {
-    const [panelProps, setPanelProps] = createSignal<PanelProps>(props)
-    onMount(() => { initialise3DCanvas(); setTimeout(() => pause(), 5000) });
-    createEffect(() => {
-        setPanelProps(props);
-    })
-    const loadInfographic = () => {
-        if (panelProps().active)
-            return true;
-
-        return false;
-    }
+    onMount(initialise3DCanvas);
     return (
-        <Show
-            when={loadInfographic()}
-            fallback={<div></div>}
-        >
-            <div class={styles.learnPanelWrapper}>
-                <div class={styles.bgBlur} />
-                <div class={styles.learnPanelMiddle}>
-                    <div class={styles.learnPanelHeader}>
-                        <h1>{panelProps().title}</h1>
-                        <h2>{panelProps().subTitle}</h2>
-                    </div>
-                    <div class={styles.learnPanelBody} innerHTML={panelProps().markdown} />
+        <div class={styles.learnPanelWrapper}>
+            <div class={styles.bgBlur} />
+            <div class={styles.learnPanelMiddle}>
+                <div class={styles.learnPanelHeader}>
+                    <h1>{props.title}</h1>
+                    <h2>{props.subTitle}</h2>
                 </div>
-                <div class={styles.learnPanelRight}>
-                    <div class={styles.canvasWrapper} id='canvasWrapper'>
-                        <canvas class={styles.learnPanelCanvas} id='modelPane' />
-                        {/* <button class={styles.canvasExpandButton} onClick={expandCanvasToWindow}><img src={expandSvg} alt="" /></button> */}
-                    </div>
-                    <div class={styles.dataRepeat}>
-                        <h3>Summary</h3>
-                        <p>{panelProps().summary}</p>
-                    </div>
+                <div class={styles.learnPanelBody} innerHTML={props.markdown} />
+            </div>
+            <div class={styles.learnPanelRight}>
+                <div class={styles.canvasWrapper} id='canvasWrapper'>
+                    <canvas class={styles.learnPanelCanvas} id='modelPane' />
+                    {/* <button class={styles.canvasExpandButton} onClick={expandCanvasToWindow}><img src={expandSvg} alt="" /></button> */}
+                </div>
+                <div class={styles.dataRepeat}>
+                    <h3>Summary</h3>
+                    <p>{props.summary}</p>
                 </div>
             </div>
-        </Show>
+        </div>
     );
 };
 
