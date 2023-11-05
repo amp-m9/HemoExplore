@@ -145,7 +145,9 @@ export function initBloodCellAnimation() {
     setUpTextElements();
     sioController = new SIOController(camera, renderer.domElement, false);
 
-    createAndAddMainCurveToScene();
+    lastVesselCurvePoints = generateVesselCurve(0, 0, 0, curvePointCount);
+    incrementNoiseStart();
+    vesselArray[vesselIndex].path = new THREE.CatmullRomCurve3(lastVesselCurvePoints);
 
     initialiseCamera();
     initialiseAudio();
@@ -249,8 +251,11 @@ function loadBloodCellModels() {
     });
 }
 
-function createCellWithLessHaemoglobin(redBloodCellMaterial: THREE.MeshToonMaterial, bloodCellGeometry: THREE.BufferGeometry<THREE.NormalBufferAttributes>, clickableMaterial: THREE.MeshBasicMaterial)
-    : BloodCell {
+function createCellWithLessHaemoglobin(
+    redBloodCellMaterial: THREE.MeshToonMaterial,
+    bloodCellGeometry: THREE.BufferGeometry<THREE.NormalBufferAttributes>,
+    clickableMaterial: THREE.MeshBasicMaterial
+): BloodCell {
     const cellLessHaemo = createBloodCell(redBloodCellMaterial, bloodCellGeometry, 1, (haemoglobinCount / 4));
     cellLessHaemo.cell.material.side = THREE.DoubleSide;
     cellLessHaemo.cell.material.needsUpdate = true;
@@ -292,9 +297,6 @@ function loadGradientMaps() {
 }
 
 function createAndAddMainCurveToScene() {
-    lastVesselCurvePoints = generateVesselCurve(0, 0, 0, curvePointCount);
-    incrementNoiseStart();
-    vesselArray[vesselIndex].path = new THREE.CatmullRomCurve3(lastVesselCurvePoints);
 }
 
 function intialiseOrbitControls() {
@@ -635,14 +637,20 @@ function generateNextVessel(indexToReplace: number) {
             innerWallRadius,
             radialSegments
         );
-        const copy = cloneVesselMaterial.clone();
-        copy.color.set(randFloat(0, 1), randFloat(0, 1), randFloat(0, 1));
-        vesselArray[index].innerVesselMesh = new THREE.Mesh(innerVesselGeometry, copy);
+
+        const outerVesselGeometry = new THREE.TubeGeometry(
+            path,
+            tubularSegments,
+            outerWallRadius,
+            radialSegments
+        );
+
+        vesselArray[index].innerVesselMesh = new THREE.Mesh(innerVesselGeometry, innerVesselMaterial);
+        vesselArray[index].innerVesselMesh = new THREE.Mesh(outerVesselGeometry, outerVesselMaterial);
         vesselArray[index].path = path;
-        const pathDiffLength = path.getPoint(0).sub(vesselArray[clamp(index + 1, 0, 2) % 2].path.getPoint(1)).length();
+        const endOfLastVessel = vesselArray[clamp(index + 1, 0, 2) % 2].path.getPoint(1);
+        const pathDiffLength = path.getPoint(0).sub(endOfLastVessel).length();
         entryOverlap = pathDiffLength / path.getLength();
-        console.log("Length ", path.getLength());
-        console.log("overlap ", entryOverlap);
         scene.add(vesselArray[index].innerVesselMesh);
         incrementNoiseStart();
     }
