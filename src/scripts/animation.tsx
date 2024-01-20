@@ -1,5 +1,4 @@
 import * as THREE from "three";
-import { tubeGenReceiveMessage, tubeGenSendMessage } from "./tubeBuilder";
 import Stats from "stats-js";
 import {
     CSS2DObject,
@@ -43,7 +42,6 @@ interface BloodVessel {
     outerVesselMesh: THREE.Mesh,
     path: THREE.CatmullRomCurve3,
 }
-const tubeBuilder = new URL('./tubeBuilder.ts', import.meta.url);
 let lastVesselCurvePoints: THREE.Vector3[];
 let camera: THREE.PerspectiveCamera;
 let scene: THREE.Scene;
@@ -659,22 +657,6 @@ function updateVesselIndexesAndCellProgress() {
         return data;
     })
 
-}
-function onTubeReceived(tubeData: tubeGenReceiveMessage) {
-    incrementNoiseStart();
-    const { innerTubeIndexAttrib, innerTubePositionAttrib, pathPoints } = tubeData
-    secondBloodVessel;
-
-    const positions = new Float32Array(innerTubePositionAttrib);
-    const indices = new Uint32Array(innerTubeIndexAttrib);
-
-    const geometry = new THREE.BufferGeometry();
-    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    geometry.setIndex(new THREE.BufferAttribute(indices, 1));
-
-    secondBloodVessel.innerVesselMesh = new THREE.Mesh(geometry, cloneVesselMaterial)
-
-    scene.add(secondBloodVessel.innerVesselMesh);
 }
 
 function updateCamera() {
