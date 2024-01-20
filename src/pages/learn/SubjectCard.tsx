@@ -9,8 +9,6 @@ export interface SubjectCardProps {
 }
 
 const SubjectCard: Component<SubjectCardProps> = (props) => {
-    console.log(styles.subjectCard);
-    console.log(props.markdown);
     return (
 
         <A href={`/HemoExplore/Learn/${props.markdown}`}>

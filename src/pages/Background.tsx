@@ -8,8 +8,6 @@ const Background: Component = () => {
         <div>
             <canvas class={`webgl ${styles.background}`} id='animationContainer' />
             <p id="subtitles" class={styles.subtitles} innerHTML="TESTING TESTING" />
-            {/* <div id='subtitlesContainer' class={styles.subtitlesContainer}> */}
-            {/* </div> */}
         </div>
     )
 }

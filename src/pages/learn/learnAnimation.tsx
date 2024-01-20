@@ -1,15 +1,10 @@
 import * as THREE from "three";
 import Stats from "stats-js";
-import {
-    CSS2DObject, CSS2DRenderer,
-} from "three/examples/jsm/renderers/CSS2DRenderer";
+import { CSS2DRenderer } from "three/examples/jsm/renderers/CSS2DRenderer";
 import { createNoise2D } from "simplex-noise";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
-import styles from "../App.module.css";
 import gsap from "gsap";
-import { clamp, degToRad } from "three/src/math/MathUtils";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
-import { SIOController, SceneInteractiveObject } from "../../scripts/SIOController";
 
 interface Cell {
     mesh: THREE.Mesh;
@@ -54,10 +49,6 @@ let activeAnimation: () => any;
 const altBgColor = new THREE.Color(0xffffff);
 
 let textRenderer: CSS2DRenderer;
-const canvasSettings = {
-    width: -1,
-    height: -1
-};
 const haemoglobinCount = 60;
 
 
@@ -73,25 +64,20 @@ export function initialise3DCanvas() {
     loadBloodCellModels();
 
 
-    activeAnimation = () => {
-        orbitControls.update();
-    };
     const loop = (time: number) => {
         stats.update();
-        let delta = time - loopSettings.timePassed;
+        // let delta = time - loopSettings.timePassed;
         loopSettings.timePassed = time;
         renderer.render(scene, camera);
-        textRenderer.render(scene, camera);
+        // textRenderer.render(scene, camera);
         if (!loaded || loopSettings.pauseAnimation) return;
 
-        activeAnimation();
-
+        orbitControls.update();
         loopSettings.progress += loopSettings.step * loopSettings.speed;
         loopSettings.progress %= 1;
     };
 
     renderer.setAnimationLoop(loop);
-    // renderer.setClearColor(altBgColor);
     renderer.setClearColor(0x000000, 0);
 }
 
@@ -123,7 +109,6 @@ function loadBloodCellModels() {
                 const bloodCellGeometry = o.geometry.clone() as THREE.BufferGeometry;
                 bloodCellGeometry.rotateX(Math.PI / 2);
 
-                // const cellLessHaemo = createCellWithLessHaemoglobin(redBloodCellMaterial, bloodCellGeometry, clickableMaterial);
                 const redBloodCell = createBloodCell(redBloodCellMaterial, bloodCellGeometry, 1, 30);
                 redBloodCell.cell.geometry.computeBoundingBox();
                 const box = redBloodCell.cell.geometry.boundingBox;
@@ -167,26 +152,19 @@ function loadGradientMaps() {
 
 
 function intialiseOrbitControls() {
-    orbitControls = new OrbitControls(camera, renderer.domElement);
+    if (orbitControls) {
+        orbitControls.domElement = renderer.domElement;
+        orbitControls.object = camera;
+    }
+    else {
+        orbitControls = new OrbitControls(camera, renderer.domElement);
+    }
     orbitControls.enabled = true;
     orbitControls.maxDistance = 15;
     orbitControls.minDistance = 1;
     orbitControls.enablePan = false;
-    // orbitControls.rotateSpeed = .
     orbitControls.autoRotate = true;
     orbitControls.autoRotateSpeed = 4;
-
-    // const geo = new THREE.SphereGeometry(1);
-    // const material = new THREE.MeshBasicMaterial({ side: THREE.BackSide, color: 0xcbcbcb, wireframe: true })
-    // const bgMesh = new THREE.Mesh(geo, material);
-    // scene.add(bgMesh);
-
-    // orbitControls.addEventListener('change', () => {
-    //     const camLength = camera.position.length() * 2;
-    //     if (camLength != 2) {
-    //         cam
-    //     }
-    // })
 }
 
 
@@ -202,14 +180,11 @@ function createBloodCell(
     const outlineMesh = new THREE.Mesh(geometry, outline);
     const scale2 = 1.06
     outlineMesh.scale.set(scale2, scale2, scale2);
-    // mesh.rotateX(Math.PI * 3 / 1.9);
     mesh.scale.set(scale, scale, scale);
     const instancedHaemoglobin = (haemoglobinCount > 0) ? generateHeamoglobin(haemoglobinCount, scale) : null;
 
     group.add(mesh);
     group.add(outlineMesh);
-    // mesh.rotateZ(Math.PI / 9)
-    // if (instancedHaemoglobin != null) group.add(instancedHaemoglobin);
 
     return { cell: mesh, haemoglobin: instancedHaemoglobin, group: group };
 }
@@ -259,7 +234,6 @@ function setUpRenderer() {
 
     stats = new Stats();
 
-    initialiseTextRenderer();
 
     scene = new THREE.Scene();
 
@@ -267,8 +241,6 @@ function setUpRenderer() {
     const farPane = 160;
 
     camera = new THREE.PerspectiveCamera(45, rect.width / rect.height, nearPane, farPane);
-
-    const canvasWrapper = (document.getElementById("canvasWrapper") as HTMLDivElement);
 }
 
 function initialiseTextRenderer() {
@@ -290,46 +262,7 @@ function onCanvasResize() {
 
 
 const getRandom = (min: number, max: number) => Math.random() * (max - min) + min;
-const randomOffSet = () => getRandom(-innerWallRadius, innerWallRadius);
 
-function tweenFogAndCanvasColour(p: number) {
-    if (p > 1 || p < 0)
-        return;
-    const newFogColor = fogColor.clone().lerp(altBgColor, p);
-    const newPageColor = fogColor.clone().lerp(paneBgColor, p);
-    scene.fog = new THREE.Fog(newFogColor, 5, 30 + (1 - p) * 160);
-    scene.background = newFogColor;
-    document.body.style.background = "#" + newPageColor.getHexString();
-}
-
-function slowRevealCrossSection(): any {
-    const timeline = gsap.timeline();
-    activeAnimation = () => { }
-    mainCell.group.add(mainCell.haemoglobin);
-
-    timeline.to(
-        activeObjectClippingPlane,
-        {
-            constant: 0,
-            duration: 1.2,
-            ease: "ease.inOut",
-        },
-        0
-    );
-    timeline.to(
-        camera.position,
-        {
-            y: 1,
-            onUpdate: () => {
-                orbitControls.update();
-            },
-            duration: 1.2,
-            ease: "ease.inOut",
-        },
-        0
-    );
-    timeline.play().then(() => timeline.kill());
-}
 
 export function expandCanvasToWindow() {
 
@@ -338,7 +271,6 @@ export function expandCanvasToWindow() {
     if (canvasWrapper == null)
         throw new Error("Yikes, where's the wrapper?");
     const startingRect = canvasWrapper.getBoundingClientRect();
-    console.log(startingRect);
 
     canvasWrapper.remove();
     document.body.appendChild(canvasWrapper);
