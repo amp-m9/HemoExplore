@@ -2,15 +2,11 @@
 import { render } from 'solid-js/web';
 
 import './index.css';
-import { type Component, onMount } from 'solid-js';
-import { Route, Router, Routes } from '@solidjs/router';
-import Home from './components/home/home';
-import SubjectPage from './components/subjectPage/subjectPage';
-import Background from './components/Background';
-import Navbar from './components/navbar';
+import { Router } from '@solidjs/router';
+import Background from './pages/Background';
+import Navbar from './pages/navbar';
 import App from './App';
 
-// const root = document.getElementById('root');
 
 render(
   () =>

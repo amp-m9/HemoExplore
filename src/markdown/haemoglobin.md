@@ -1,5 +1,4 @@
-## Haemoglobin: A Multifaceted Oxygen Transporter
-
+### **Intro**
 **Haemoglobin**, a remarkable protein found within red blood cells, is an essential player in the intricate symphony of oxygen transport and gas exchange that sustains human life. This complex molecule exhibits a structural and functional elegance that allows it to carry out its crucial roles with precision and efficiency.
 
 ### **Structural Complexity**
@@ -24,6 +23,6 @@ Aside from oxygen, haemoglobin can also bind to other molecules. One notable exa
 
 Genetic mutations in the globin genes can lead to various haemoglobinopathies, such as *sickle cell disease* and different forms of *thalassaemia*. Sickle cell disease results from a mutation in the beta-globin gene, leading to the production of abnormal haemoglobin (HbS). In deoxygenated conditions, HbS molecules can polymerize and cause red blood cells to adopt a sickle shape, which can lead to blockages in blood vessels and a cascade of health issues. Thalassaemia encompasses a group of disorders characterized by reduced synthesis of specific globin chains, resulting in decreased haemoglobin production and subsequent anaemia.
 
-## **Conclusion**
+### **Conclusion**
 
 In the intricate ballet of respiration and gas exchange, haemoglobin takes center stage, elegantly adapting its structure and interactions to ensure optimal oxygen loading and unloading. Its cooperative binding, responsiveness to pH, and capacity to bind to other molecules make it a pivotal player in maintaining the delicate balance of gases within the body. Understanding haemoglobin's complexities sheds light on both its vital functions and the disruptions that can occur due to genetic variations, underscoring its significance in human health and physiology.

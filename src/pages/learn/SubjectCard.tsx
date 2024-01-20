@@ -1,6 +1,6 @@
 import { Component } from "solid-js";
 import styles from '../../App.module.css';
-import { A } from "@solidjs/router";
+import { A, Router } from "@solidjs/router";
 
 export interface SubjectCardProps {
     title: string;
@@ -9,9 +9,9 @@ export interface SubjectCardProps {
 }
 
 const SubjectCard: Component<SubjectCardProps> = (props) => {
-    console.log(styles.subjectCard);
     return (
-        <A href={`${props.markdown}`}>
+
+        <A href={`/HemoExplore/Learn/${props.markdown}`}>
             <div class={styles.subjectCard}>
                 <h3>{props.title}</h3>
                 <div class={styles.subjectCardImageWrapper}>
@@ -21,5 +21,4 @@ const SubjectCard: Component<SubjectCardProps> = (props) => {
         </A>
     )
 }
-
 export default SubjectCard;

@@ -1,5 +1,5 @@
 import { JSX } from "solid-js";
-import Quiz from "../components/quiz/Quiz";
+import Quiz from "../pages/quiz/Quiz";
 import { getRandom } from "./animation";
 import { createComponent, render } from "solid-js/web";
 
@@ -21,7 +21,6 @@ export function initQuiz() {
         }
         quizQuestions[i] = element;
     }
-    console.log(quizQuestions)
     buildTimeline();
 }
 
