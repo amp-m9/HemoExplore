@@ -180,13 +180,19 @@ a.activeLink {
 }
 
 .learnPanelRight {
-  padding: 25px;
+  height: min-content;
+  position: sticky;
+  display: flex;
+  flex-direction: column;
+  top: 0;
+}
+
+.learnPanelRightElement {
+  margin-bottom: 1em;
+  padding: 1em;
   background: rgba(0, 0, 0, .33);
   backdrop-filter: blur(50px);
   border-radius: 8px;
-  height: min-content;
-  position: sticky;
-  top: 0;
 }
 
 .learnPanelRight h3 {
