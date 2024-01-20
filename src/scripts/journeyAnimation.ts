@@ -26,14 +26,12 @@ export namespace journey {
 
     export function start() {
         const speech = convertStringToSubtitleArray(intro);
-        console.log(speech);
         narrate(speech, partOneOxygen);
 
     }
 
     function partOneOxygen() {
         const speech = convertStringToSubtitleArray(part1_1);
-        setTimeout(() => console.log('(begin animation)'), 1000);
         narrate(
             speech, () => {
                 setSubtitles('(play animation showing oxygen molecules attaching to hemoglobin)')

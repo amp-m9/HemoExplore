@@ -536,10 +536,6 @@ function onWindowResize() {
 
     renderer.setSize(rendererWidth, rendererHeight);
     textRenderer.setSize(rendererWidth, rendererHeight);
-
-    const inspectorUIDiv = document.getElementById('inspectorUIDiv') as HTMLDivElement;
-    inspectorUIDiv.style.width = `${rendererWidth}px`;
-    inspectorUIDiv.style.height = `${rendererHeight}px`;
 }
 
 function updateBloodCells() {
@@ -1356,7 +1352,6 @@ function initialiseAudio() {
 
     ambientSound = new THREE.Audio(listener);
     heartbeatSound = new THREE.Audio(listener);
-    console.log(heartbeatSound.buffer);
 
 
     const audioLoader = new THREE.AudioLoader();
