@@ -4,10 +4,10 @@ import sickleCellIcon from '../../assets/icons/sickle.svg'
 
 export interface LearnSubjectProps {
     summary:string,
-    icon:string,
+    icon?:string,
     title: string,
     subTitle: string,
-    model?: string,
+    model?: URL,
     next?: string,
 }
 
@@ -17,7 +17,7 @@ export const  sections = {
     whiteBloodCells: "white-blood-cells"
 }
 
-const getIndex = (val:string)=>{
+const getNextIndex = (val:string)=>{
     const values = Object.values(sections)
     return values[values.indexOf(val)%values.length];
 }
@@ -28,12 +28,13 @@ export const learnDB:{[id:string]:LearnSubjectProps} = {
         icon:redBloodCellIcon,
         title: "RED BLOOD CELLS",
         subTitle: "BLOOD'S OXYGEN RUNNERS",
-        next: getIndex(sections.RedBloodCells),
+        next: getNextIndex(sections.RedBloodCells),
+        model : new URL("../../assets/models/redBloodCellPatched.glb", import.meta.url),
     },
     [sections.haemoglobin]:{
         title: "HAEMOGLOBIN",
         subTitle: "A MULTIFACETED OXYGEN TRANSPORTER", 
-        icon:sickleCellIcon,
-        summary: "something",
+        summary: "Haemoglobin, a protein residing within red blood cells, is pivotal for the intricate process of oxygen transport in the human body. Structurally, it comprises four globular protein chains, each associated with a heme group containing iron. This iron is the crucial component that allows haemoglobin to bind and release oxygen in a reversible manner. Through cooperative binding, haemoglobin ensures efficient oxygen loading in the lungs and unloading in oxygen-deprived tissues. Its affinity for oxygen is modulated by factors like pH and carbon dioxide levels, a phenomenon known as the Bohr effect. Additionally, haemoglobin can bind to carbon dioxide and, in certain genetic conditions, undergo mutations leading to disorders like sickle cell disease and thalassemia, emphasizing its central role in human health and physiology.",
+        next: getNextIndex(sections.haemoglobin);
     }
 }

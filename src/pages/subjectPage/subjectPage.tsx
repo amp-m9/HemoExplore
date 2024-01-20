@@ -1,4 +1,4 @@
-import { onMount, type Component, createSignal } from 'solid-js';
+import { onMount, type Component, createSignal, Show } from 'solid-js';
 import styles from '../../App.module.css';
 import { expandCanvasToWindow, initialise3DCanvas } from '../learn/learnAnimation';
 import { learnDB, LearnSubjectProps } from '../learn/learnContentDB';
@@ -20,13 +20,19 @@ const SubjectPage: Component = () => {
             }
         })
     });
+    onMount(() => {
 
-    onMount(initialise3DCanvas);
+
+        if (panelProps().model !== undefined) {
+            initialise3DCanvas(panelProps().model)
+
+        }
+    })
 
     return (
         <div class={`${styles.learnPage}`} >
+            <div class={styles.bgBlur} />
             <div class={styles.learnPanelWrapper}>
-                <div class={styles.bgBlur} />
                 <div class={styles.learnPanelMiddle}>
                     <div class={styles.learnPanelHeader}>
                         <h1>{panelProps().title}</h1>
@@ -36,9 +42,11 @@ const SubjectPage: Component = () => {
                 </div>
                 <div class={styles.learnPanelRight}>
                     <div class={styles.learnPanelRightElement}>
-                        <div class={styles.canvasWrapper} id='canvasWrapper'>
-                            <canvas class={styles.learnPanelCanvas} id='modelPane' />
-                        </div>
+                        <Show when={panelProps().model !== undefined}>
+                            <div class={styles.canvasWrapper} id='canvasWrapper'>
+                                <canvas class={styles.learnPanelCanvas} id='modelPane' />
+                            </div>
+                        </Show>
                         <div class={styles.dataRepeat}>
                             <h3>Summary</h3>
                             <p style={{ 'padding-bottom': 0 }}>{panelProps().summary}</p>

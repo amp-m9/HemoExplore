@@ -28,7 +28,6 @@ let innerWallRadius = 4.5;
 let sevenTone: THREE.Texture;
 let fiveTone: THREE.Texture;
 let threeTone: THREE.Texture;
-const redBloodCellURL = new URL("../../assets/models/redBloodCellPatched.glb", import.meta.url);
 const threeToneURL = new URL("../../assets/gradientMaps/threeTone.jpg", import.meta.url);
 const fiveToneURL = new URL("../../assets/gradientMaps/fiveTone.jpg", import.meta.url);
 const sevenToneURL = new URL("../../assets/gradientMaps/sevenTone2.jpg", import.meta.url);
@@ -52,7 +51,7 @@ let textRenderer: CSS2DRenderer;
 const haemoglobinCount = 60;
 
 
-export function initialise3DCanvas() {
+export function initialise3DCanvas(model: URL) {
     setUpRenderer();
     if (!renderer) {
         return;
@@ -61,7 +60,7 @@ export function initialise3DCanvas() {
     intialiseOrbitControls();
     initialiseCamera();
     loadGradientMaps();
-    loadBloodCellModels();
+    loadBloodCellModels(model);
 
 
     const loop = (time: number) => {
@@ -87,7 +86,7 @@ function initialiseCamera() {
     camera.updateMatrix();
 }
 
-function loadBloodCellModels() {
+function loadBloodCellModels(model: URL) {
     const redBloodCellMaterial = new THREE.MeshToonMaterial({
         color: 0xff0040,
         gradientMap: sevenTone,
@@ -101,7 +100,7 @@ function loadBloodCellModels() {
     });
 
     const gltfLoader = new GLTFLoader();
-    gltfLoader.load(redBloodCellURL.href, function (gltf) {
+    gltfLoader.load(model.href, function (gltf) {
         gltf.scene.traverse((o) => {
             // @ts-ignore
             if (o.isMesh) {
