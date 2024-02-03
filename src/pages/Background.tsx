@@ -1,9 +1,11 @@
 import { Component, onMount } from "solid-js";
 import { initBloodCellAnimation } from "../scripts/animation";
+import AnimationsController from "../scripts/animationController";
 import styles from '../App.module.css'
 
 const Background: Component = () => {
-    onMount(initBloodCellAnimation);
+    const controller = AnimationsController.getInstance();
+    onMount(() => controller.Initialise());
     return (
         <div>
             <canvas class={`webgl ${styles.background}`} id='animationContainer' />
