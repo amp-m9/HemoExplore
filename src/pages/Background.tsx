@@ -5,7 +5,11 @@ import styles from '../App.module.css'
 
 const Background: Component = () => {
     const controller = AnimationsController.getInstance();
-    onMount(() => controller.Initialise());
+    onMount(async () => {
+        await controller.Initialise();
+        controller.AnimateIdle();
+    })
+
     return (
         <div>
             <canvas class={`webgl ${styles.background}`} id='animationContainer' />

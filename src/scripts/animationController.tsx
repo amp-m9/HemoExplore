@@ -90,9 +90,6 @@ const loopSettings = {
     step: 0.0001,
     speed: 1,
 };
-let relativeVelocity = 1;
-let loaded = false;
-let activeAnimation: () => any;
 const defaultRotationOffset = 0.0906351097205758;
 
 const camSettings = {
@@ -140,6 +137,7 @@ export default class AnimationsController {
     private SpotLight: THREE.SpotLight;
     private DirectionalLight: THREE.DirectionalLight;
     BloodCellRotation: number = 0;
+    RelativeVelocity: number = 1;
 
 
 
@@ -170,11 +168,20 @@ export default class AnimationsController {
         this.AddLightingToScene();
         this.AttatchCamera();
         this.updateCells();
-        this.updateCells();
-        this.updateCells();
         this.UpdateLighting();
         this.Renderer.render(this.Scene, this.Camera)
         this.Initialised = true;
+    }
+
+    public AnimateIdle() {
+        this.Renderer.setAnimationLoop(
+            () => {
+                this.UpdateLighting();
+                this.updateCells();
+                this.UpdateMainCell();
+                this.Renderer.render(this.Scene, this.Camera);
+            }
+        )
     }
 
     private AttatchCamera() {
@@ -245,7 +252,7 @@ export default class AnimationsController {
         this.Renderer = new THREE.WebGLRenderer({ antialias: true, canvas: canvas });
         this.Renderer.shadowMap.enabled = true;
         this.Renderer.setSize(window.innerWidth, window.innerHeight);
-
+        this.Renderer.setClearColor(0xd24141)
         this.Scene = new THREE.Scene();
         this.Scene.fog = new THREE.Fog(fogColor, 4.7, 170);
 
@@ -333,13 +340,14 @@ export default class AnimationsController {
             innerVesselMesh,
             outerVesselMesh,
             path,
+            pathPoints,
             entryOverlap } = generateNextVessel(
                 LastCurve,
                 VesselArray[this.VesselIndex].path,
                 Materials.innerVessel,
                 Materials.outerVessel
             );
-
+        this.LastCurve = pathPoints;
         Object.assign(VesselArray[index], { innerVesselMesh, outerVesselMesh, path })
         this.EntryOverlap = entryOverlap;
         noiseStart += (curvePointCount * 2) + 1;
@@ -401,7 +409,7 @@ export default class AnimationsController {
     }
 
     private updateCells() {
-        this.BloodCellRotation += 0.0001 * loopSettings.speed;
+        this.BloodCellRotation += 0.0001;
         this.UpdateBackgroundCells();
     }
 
@@ -409,17 +417,21 @@ export default class AnimationsController {
         let data: CellData;
         for (let i = 0; i < this.RedBloodCellData.length; i++) {
             data = this.RedBloodCellData[i];
-            const lastProg = data.progress
-            data.progress += data.velocity * relativeVelocity * loopSettings.speed;
+            const lastProgStr = data.progress.toString();
+            const lastProg = data.progress;
+            data.progress += data.velocity * this.RelativeVelocity;
             if (lastProg < 1 && !(data.progress < 1))
                 data.progress += this.EntryOverlap;
             data.progress %= this.tubeCount();
+            if (data.progress < 0) debugger;
 
 
             const inSecondTube = data.progress > 1;
             this.RedBloodCellData[i] = data;
             const index = inSecondTube ? (this.VesselIndex + 1) % 2 : this.VesselIndex;
             const progress = inSecondTube ? (data.progress % 1) : data.progress
+
+            if (progress < 0) debugger;
 
             const start = this.VesselArray[index].path.getPoint(progress);
             dummy.position.copy(start);
@@ -432,6 +444,47 @@ export default class AnimationsController {
             dummy.updateMatrix();
 
             this.RedBloodCellInstances.setMatrixAt(i, dummy.matrix.clone());
+        }
+    }
+
+
+    private UpdateMainCell() {
+        const lastProg = this.MainCell.progress;
+        this.MainCell.progress += this.MainCell.velocity * this.RelativeVelocity;
+        if (lastProg < 1 && !(this.MainCell.progress < 1))
+            this.MainCell.progress += this.EntryOverlap;
+
+        this.MainCell.progress %= this.tubeCount();
+
+        const inSecondTube = this.MainCell.progress > 1;
+        const index = inSecondTube ? (this.VesselIndex + 1) % 2 : this.VesselIndex;
+        const progress = inSecondTube ? (this.MainCell.progress % 1) : this.MainCell.progress
+
+
+
+        let point = this.VesselArray[index].path.getPoint(progress);
+        this.MainCell.group.position.set(point.x, point.y, point.z);
+
+        if (this.MainCell.progress > 1.5) {
+            this.GenerateNextBloodVessel(this.VesselIndex,);
+            this.UpdateVesselIndexesAndCellProgress();
+        }
+
+        const rotation = (Math.PI / 200 + Math.PI * loopSettings.step);
+        // debugger;
+        this.MainCell.mesh.rotateOnAxis(mainCellRotationAxis, rotation);
+        // this.MainCell.highlight.rotateOnAxis(mainCellRotationAxis, rotation);
+
+        this.RedBloodCellInstances.instanceMatrix.needsUpdate = true;
+        this.RedBloodCellInstances.castShadow = true;
+
+        this.BloodCellRotation += 0.0001;
+        this.RelativeVelocity -= 0.02;
+        if (this.RelativeVelocity < 1.009) {
+            this.RelativeVelocity = 3.5;
+            // if (heartbeatSound.isPlaying)
+            //     heartbeatSound.stop();
+            // heartbeatSound.play();
         }
     }
 
@@ -465,7 +518,14 @@ export default class AnimationsController {
         object.updateMatrixWorld(true)
     }
 
-
+    private UpdateVesselIndexesAndCellProgress() {
+        this.VesselIndex = (this.VesselIndex + 1) % 2;
+        this.MainCell.progress = clamp(this.MainCell.progress - 1, 0, 2)
+        this.RedBloodCellData = this.RedBloodCellData.map(data => {
+            data.progress = clamp(data.progress - 1, 0, 2)
+            return data;
+        })
+    }
 }
 
 const textureLoader = new THREE.TextureLoader();
@@ -569,7 +629,7 @@ function generateNextVessel(
     const pathDiffLength = path.getPoint(0).sub(endOfLastVessel).length();
     const entryOverlap = pathDiffLength / path.getLength();
 
-    return { innerVesselMesh, outerVesselMesh, path, entryOverlap }
+    return { innerVesselMesh, outerVesselMesh, path, pathPoints, entryOverlap }
 
     // incrementNoiseStart();
 }

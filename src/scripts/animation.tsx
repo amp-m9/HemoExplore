@@ -4,7 +4,6 @@ import {
     CSS2DObject,
     CSS2DRenderer,
 } from "three/examples/jsm/renderers/CSS2DRenderer";
-import { createNoise2D } from "simplex-noise";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import styles from "../App.module.css";
 import gsap from "gsap";
@@ -42,10 +41,6 @@ interface BloodVessel {
     outerVesselMesh: THREE.Mesh,
     path: THREE.CatmullRomCurve3,
 }
-let lastVesselCurvePoints: THREE.Vector3[];
-let camera: THREE.PerspectiveCamera;
-let scene: THREE.Scene;
-let renderer: THREE.WebGLRenderer;
 let stats: Stats;
 
 let spotLight: THREE.SpotLight;
@@ -1351,8 +1346,5 @@ function initialiseAudio() {
         heartbeatSound.setVolume(0.7);
         // ambientSound.play();
     })
-
-
-
 }
 
