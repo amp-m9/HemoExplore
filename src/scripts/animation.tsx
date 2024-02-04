@@ -724,16 +724,6 @@ export function startJourney() {
                 delay: 0,
                 duration: 2,
                 ...defaultEase,
-                onComplete: () => {
-                    sioController.wake();
-                    orbitalControlsRelativePosition =
-                        mainCell.group.worldToLocal(camera.position.clone());
-                    orbitControls.target = mainCell.group.position;
-                    orbitControls.enabled = true;
-                    // orbitControls.dampingFactor = 0.5;
-                    orbitControls.update();
-                    activeAnimation = activeStreamAnimation;
-                },
             },
             "start"
         )
@@ -769,7 +759,7 @@ export function startJourney() {
 
     timeline.play("start").then(() => {
         timeline.kill();
-        journey.start();
+        // journey.start();
     });
 }
 

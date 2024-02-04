@@ -62,7 +62,6 @@ const tubularSegments = 128;
 const mainCellRotationAxis = new THREE.Vector3(1, 1, 0).normalize();
 let ambientSound: THREE.Audio;
 let heartbeatSound: THREE.Audio
-let noiseStart = 0;
 const redBloodCellURL = new URL("../assets/models/redBloodCellPatched.glb", import.meta.url);
 const threeToneURL = new URL("../assets/gradientMaps/threeTone.jpg", import.meta.url);
 const fiveToneURL = new URL("../assets/gradientMaps/fiveTone.jpg", import.meta.url);
@@ -241,13 +240,10 @@ export default class AnimationsController {
 
     private GenerateCurveData() {
         this.LastCurve = generateVesselCurve(0, 0, 0, curvePointCount);
-        this.NoiseStart += (curvePointCount * 2) + 1;
         this.VesselArray[0].path = new THREE.CatmullRomCurve3(this.LastCurve);
     }
 
     private SetUpRenderer() {
-        const { onWindowResize } = this;
-
         const canvas = document.querySelector("canvas.webgl") as HTMLCanvasElement;
         this.Renderer = new THREE.WebGLRenderer({ antialias: true, canvas: canvas });
         this.Renderer.shadowMap.enabled = true;
@@ -260,22 +256,22 @@ export default class AnimationsController {
         const farPane = 160;
         this.Camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, nearPane, farPane);
 
-        window.addEventListener("resize", onWindowResize, false);
+        window.addEventListener("resize", this.onWindowResize, false);
     }
 
     private onWindowResize() {
-        var { Renderer, Camera } = this;
+
 
         const aspectWidth = (window.innerWidth * canvasPercentage.x)
         const aspectHeight = (window.innerHeight * canvasPercentage.y);
-        Camera.aspect = aspectWidth / aspectHeight;
-        Camera.updateProjectionMatrix();
+        this.Camera.aspect = aspectWidth / aspectHeight;
+        this.Camera.updateProjectionMatrix();
 
         const rendererWidth = window.innerWidth * canvasPercentage.x;
         const rendererHeight = window.innerHeight * canvasPercentage.y;
 
-        Renderer.setSize(rendererWidth, rendererHeight);
-        Renderer.setSize(rendererWidth, rendererHeight);
+        this.Renderer.setSize(rendererWidth, rendererHeight);
+        this.Renderer.setSize(rendererWidth, rendererHeight);
     }
 
     private tubeCount = () => this.VesselArray[1].path == undefined ? 1 : 2;
@@ -335,6 +331,8 @@ export default class AnimationsController {
         this.Geometries.redBloodCell = rbcGeometry;
     }
     private GenerateNextBloodVessel(index: number) {
+        this.NoiseStart += (curvePointCount * 2) + 1;
+
         const { Materials, LastCurve, VesselArray } = this;
         const {
             innerVesselMesh,
@@ -343,14 +341,18 @@ export default class AnimationsController {
             pathPoints,
             entryOverlap } = generateNextVessel(
                 LastCurve,
-                VesselArray[this.VesselIndex].path,
+                VesselArray[(index + 1) % 2].path,
                 Materials.innerVessel,
-                Materials.outerVessel
+                Materials.outerVessel,
+                this.NoiseStart
             );
+
+        const oldPipe = VesselArray[index];
+        this.Scene.remove(oldPipe.innerVesselMesh, oldPipe.outerVesselMesh);
+        this.Scene.add(innerVesselMesh, outerVesselMesh);
         this.LastCurve = pathPoints;
         Object.assign(VesselArray[index], { innerVesselMesh, outerVesselMesh, path })
         this.EntryOverlap = entryOverlap;
-        noiseStart += (curvePointCount * 2) + 1;
     }
 
     private ConstructScene() {
@@ -420,18 +422,16 @@ export default class AnimationsController {
             const lastProgStr = data.progress.toString();
             const lastProg = data.progress;
             data.progress += data.velocity * this.RelativeVelocity;
+
             if (lastProg < 1 && !(data.progress < 1))
                 data.progress += this.EntryOverlap;
-            data.progress %= this.tubeCount();
-            if (data.progress < 0) debugger;
 
+            data.progress %= this.tubeCount();
 
             const inSecondTube = data.progress > 1;
             this.RedBloodCellData[i] = data;
             const index = inSecondTube ? (this.VesselIndex + 1) % 2 : this.VesselIndex;
             const progress = inSecondTube ? (data.progress % 1) : data.progress
-
-            if (progress < 0) debugger;
 
             const start = this.VesselArray[index].path.getPoint(progress);
             dummy.position.copy(start);
@@ -471,9 +471,7 @@ export default class AnimationsController {
         }
 
         const rotation = (Math.PI / 200 + Math.PI * loopSettings.step);
-        // debugger;
         this.MainCell.mesh.rotateOnAxis(mainCellRotationAxis, rotation);
-        // this.MainCell.highlight.rotateOnAxis(mainCellRotationAxis, rotation);
 
         this.RedBloodCellInstances.instanceMatrix.needsUpdate = true;
         this.RedBloodCellInstances.castShadow = true;
@@ -614,7 +612,9 @@ function generateNextVessel(
     lastPath: THREE.CatmullRomCurve3,
     innerVesselMaterial: THREE.Material,
     outerVesselMaterial: THREE.Material,
+    noiseStart: number
 ) {
+
     const endOfCurrentVesselPoints = lastVesselCurvePoints.slice(-2).map(p => p.toArray());
 
     const pathPoints = generateVesselCurveFromStartPoints(endOfCurrentVesselPoints, curvePointCount, noiseStart);
