@@ -1,7 +1,6 @@
 import { onMount, type Component } from 'solid-js';
 import { A } from '@solidjs/router';
 import styles from '../../App.module.css';
-import { initBloodCellAnimation, startJourney as start, enableCompare } from '../../scripts/animation';
 
 const Home: Component = () => {
     return (
@@ -14,7 +13,6 @@ const Home: Component = () => {
                         <div>
                             <nav>
                                 <ul>
-                                    <li onClick={start}> <A href='/HemoExplore/'> Start</A></li>
                                     <li><A href='/HemoExplore/Learn'>Learn</A></li>
                                     <li><A href='/HemoExplore/Quizzes'>Quizzes & Challenges</A></li>
                                     <li><A href='/HemoExplore/About'>About</A></li>
