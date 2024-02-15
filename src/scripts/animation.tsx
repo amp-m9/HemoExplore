@@ -4,17 +4,24 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import gsap from "gsap";
 import { clamp } from "three/src/math/MathUtils";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
-import { SIOController, SceneInteractiveObject } from "./SIOController";
 import ambientAudioFile from "../assets/sound/zapsplat_nature_underwater_ambience_flowing_current_deep_002_30535.mp3"
 import heartbeatAudioFile from "../assets/sound/zapsplat_human_heartbeat_single_26493.mp3";
 import { generateVesselCurve, generateVesselCurveFromStartPoints } from "./noise";
 import { MainCell, CellData, BloodVessel } from "./interfaces";
 
-const innerWallRadius = 4.5;
-const radialSegments = 17;
-const outerWallRadius = innerWallRadius + 0.5;
+const INNER_WALL_RADIUS = 4.5;
+const RADIAL_SEGMENTS = 17;
+const OUTER_WALL_RADIUS = INNER_WALL_RADIUS + 0.5;
+const TUBULAR_SEGMENTS = 128;
+const RED_BLOOD_CELL_COUNT = 600;
+const POINT_LIGHT_DEPTH = 22;
+const STEP = 0.0001;
+const CURVE_POINT_COUNT = 300;
+const IDLE_CAMERA_ROTATION_OFFSET = 0.0998;
+const IDLE_OFFSET_ALONG_TAN = 15;
+const DIRECTIONAL_LIGHT_OFFSET = new THREE.Vector3(-10, -10, 0);
+const SPOTLIGHT_OFFSET = new THREE.Vector3(10, -7, -100);
 
-const tubularSegments = 128;
 
 const mainCellRotationAxis = new THREE.Vector3(1, 1, 0).normalize();
 const redBloodCellURL = new URL("../assets/models/redBloodCellPatched.glb", import.meta.url);
@@ -22,20 +29,9 @@ const threeToneURL = new URL("../assets/gradientMaps/threeTone.jpg", import.meta
 const fiveToneURL = new URL("../assets/gradientMaps/fiveTone.jpg", import.meta.url);
 const sevenToneURL = new URL("../assets/gradientMaps/sevenTone.jpg", import.meta.url);
 
-const redBloodCellCount = 600;
 
 const dummy = new THREE.Object3D();
-const lightingDummy = new THREE.Object3D();
-
-const pointLightDepth = 22;
-const spotlightOffSet = new THREE.Vector3(10, -7, -100);
-const directionalLightOffset = new THREE.Vector3(-10, -10, 0);
-
-const curvePointCount = 300;
-const loopSettings = { step: 0.0001, };
-const defaultRotationOffset = 0.0998;
 const fogColor = new THREE.Color(0xd24141);
-const canvasPercentage = { x: 1, y: 1 };
 
 export default class AnimationsController {
     private static instance: AnimationsController;
@@ -50,10 +46,13 @@ export default class AnimationsController {
     private Renderer: THREE.WebGLRenderer;
     private Scene: THREE.Scene;
     private Camera: THREE.PerspectiveCamera;
-    private OrbitControls: OrbitControls;
     private CameraSettings = {
-        sleep: false,
-        currentOffset: new THREE.Vector3(0, 0, -5),
+        rotationAfterLook: {
+            x: 0,
+            y: IDLE_CAMERA_ROTATION_OFFSET,
+            z: 0
+        },
+        offSetAlongTangent: IDLE_OFFSET_ALONG_TAN,
         targetOffSet: new THREE.Vector3(0, 0, -5),
     }
 
@@ -94,8 +93,11 @@ export default class AnimationsController {
 
         this.SetUpRenderer();
         this.GenerateCellData();
-        await this.LoadAssets();
-        await this.LoadSounds();
+
+        await Promise.all([
+            this.LoadAssets(),
+            this.LoadSounds(),
+        ])
         this.GenerateCurveData();
 
         this.CreateMeshes();
@@ -111,10 +113,10 @@ export default class AnimationsController {
     public AnimateIdle() {
         this.Renderer.setAnimationLoop(
             () => {
-                this.UpdateLighting();
                 this.updateCells();
                 this.UpdateMainCell();
-                this.UpdateCameraOffset();
+                this.UpdateCamera();
+                this.UpdateLighting();
                 this.Renderer.render(this.Scene, this.Camera);
             }
         )
@@ -124,15 +126,6 @@ export default class AnimationsController {
         this.Renderer.dispose();
     }
 
-    private UpdateCameraOffset() {
-        const { currentPath, progress } = this.getCurrentPath(this.MainCell.progress);
-        const tangent = currentPath.getTangent(progress).normalize().multiplyScalar(4);
-        const cameraPosition = this.MainCell.group.position.clone().sub(tangent);
-        this.Camera.position.copy(this.MainCell.group.worldToLocal(cameraPosition))
-        this.Camera.lookAt(this.MainCell.group.position);
-        this.Camera.rotateY(Math.PI * defaultRotationOffset)
-
-    }
     private AttatchCamera() {
         this.MainCell.group.add(this.Camera);
     }
@@ -142,7 +135,7 @@ export default class AnimationsController {
         const redBloodCellMaterial = Materials.redBloodCell as THREE.MeshToonMaterial;
         const redBloodCellGeometry = Geometries.redBloodCell as THREE.BufferGeometry<THREE.NormalBufferAttributes>;
 
-        this.RedBloodCellInstances = CreateInstancedMeshFromGeometry(redBloodCellMaterial, redBloodCellGeometry, redBloodCellCount);
+        this.RedBloodCellInstances = CreateInstancedMeshFromGeometry(redBloodCellMaterial, redBloodCellGeometry, RED_BLOOD_CELL_COUNT);
 
         MainCell.mesh = CreateMeshAndScale(redBloodCellMaterial, redBloodCellGeometry, 1.2);
 
@@ -161,19 +154,18 @@ export default class AnimationsController {
     }
 
     private GenerateCellData() {
-        console.log('starting GenerateCellData');
 
-        this.RedBloodCellData = new Array<CellData>(redBloodCellCount);
+        this.RedBloodCellData = new Array<CellData>(RED_BLOOD_CELL_COUNT);
         for (let i = 0; i < this.RedBloodCellData.length; i++) {
             const cellData: CellData = {
                 offset: new THREE.Vector3(randomOffSet(), randomOffSet()),
                 progress: getRandom(0, 1),
                 velocity: getRandom(0.00009, 0.0001) / 2,
             };
-            if (cellData.offset.length() > innerWallRadius - 0.4) {
+            if (cellData.offset.length() > INNER_WALL_RADIUS - 0.4) {
                 cellData.offset
                     .normalize()
-                    .multiplyScalar(getRandom(2, innerWallRadius - 0.4));
+                    .multiplyScalar(getRandom(2, INNER_WALL_RADIUS - 0.4));
             }
             this.RedBloodCellData[i] = cellData;
         }
@@ -184,17 +176,14 @@ export default class AnimationsController {
             progress: 0.5,
             velocity: getRandom(0.000098, 0.0001) / 2,
         }
-        console.log('finishing GenerateCellData');
-
     }
 
     private GenerateCurveData() {
-        this.LastCurve = generateVesselCurve(0, 0, 0, curvePointCount);
+        this.LastCurve = generateVesselCurve(0, 0, 0, CURVE_POINT_COUNT);
         this.VesselArray[0].path = new THREE.CatmullRomCurve3(this.LastCurve);
     }
 
     private SetUpRenderer() {
-        console.log('starting SetUpRenderer');
         const canvas = document.querySelector("canvas.webgl") as HTMLCanvasElement;
         this.Renderer = new THREE.WebGLRenderer({ antialias: true, canvas: canvas });
         this.Renderer.shadowMap.enabled = true;
@@ -208,19 +197,18 @@ export default class AnimationsController {
         this.Camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, nearPane, farPane);
 
         window.addEventListener("resize", () => this.onWindowResize(this.Camera, this.Renderer), false);
-        console.log('finishing SetUpRenderer');
     }
 
     private onWindowResize(Camera: THREE.PerspectiveCamera, Renderer: THREE.Renderer) {
 
 
-        const aspectWidth = (window.innerWidth * canvasPercentage.x)
-        const aspectHeight = (window.innerHeight * canvasPercentage.y);
+        const aspectWidth = (window.innerWidth)
+        const aspectHeight = (window.innerHeight);
         Camera.aspect = aspectWidth / aspectHeight;
         Camera.updateProjectionMatrix();
 
-        const rendererWidth = window.innerWidth * canvasPercentage.x;
-        const rendererHeight = window.innerHeight * canvasPercentage.y;
+        const rendererWidth = window.innerWidth;
+        const rendererHeight = window.innerHeight;
 
         Renderer.setSize(rendererWidth, rendererHeight);
         Renderer.setSize(rendererWidth, rendererHeight);
@@ -232,7 +220,6 @@ export default class AnimationsController {
      * Loads materials, textures and geometries. No models are made at this point
      */
     private async LoadAssets() {
-        console.log('starting LoadAssets');
 
         const [threeTone, fiveTone, sevenTone] = await Promise.all([
             LoadTexture(threeToneURL.href, 'threeTone'),
@@ -283,7 +270,6 @@ export default class AnimationsController {
         rbcGeometry.rotateX(Math.PI / 2);
 
         this.Geometries.redBloodCell = rbcGeometry;
-        console.log('fininshing loadAssets');
 
     }
 
@@ -301,7 +287,7 @@ export default class AnimationsController {
     }
 
     private GenerateNextBloodVessel(index: number) {
-        this.NoiseStart += (curvePointCount * 2) + 1;
+        this.NoiseStart += (CURVE_POINT_COUNT * 2) + 1;
 
         const { Materials, LastCurve, VesselArray } = this;
         const {
@@ -436,7 +422,7 @@ export default class AnimationsController {
             this.UpdateVesselIndexesAndCellProgress();
         }
 
-        const rotation = (Math.PI / 200 + Math.PI * loopSettings.step);
+        const rotation = (Math.PI / 200 + Math.PI * STEP);
         this.MainCell.mesh.rotateOnAxis(mainCellRotationAxis, rotation);
 
         this.RedBloodCellInstances.instanceMatrix.needsUpdate = true;
@@ -452,44 +438,45 @@ export default class AnimationsController {
         }
     }
 
-    private getCurrentPath(itemProgress: number) {
-        const inSecondTube = itemProgress > 1;
-        const index = inSecondTube ? (this.VesselIndex + 1) % 2 : this.VesselIndex;
-        const progressAlongPath = inSecondTube ? (itemProgress % 1) : itemProgress;
 
-        let currentPath = this.VesselArray[index].path;
-        return { currentPath, progress: progressAlongPath };
+    private UpdateCamera() {
+        const { rotationAfterLook, offSetAlongTangent } = this.CameraSettings;
+        const { currentPath, progress } = this.getCurrentPath(this.MainCell.progress);
+
+        const tangent = currentPath.getTangent(progress).normalize().multiplyScalar(offSetAlongTangent);
+        const cameraPosition = this.MainCell.group.position.clone().sub(tangent);
+
+        this.Camera.position.copy(this.MainCell.group.worldToLocal(cameraPosition))
+        this.Camera.lookAt(this.MainCell.group.position);
+        this.Camera.rotateY(Math.PI * rotationAfterLook.y)
     }
 
     private UpdateLighting() {
-        this.AdjustDummyForTransform(lightingDummy);
+        const cameraPos = new THREE.Vector3();
+        this.Camera.getWorldPosition(cameraPos);
+        dummy.position.copy(cameraPos);
+        dummy.lookAt(...this.MainCell.group.position.toArray());
+        dummy.updateMatrix()
+        dummy.updateMatrixWorld(true)
 
-        let prog = clamp(this.MainCell.progress - 0.007, 0, 1);
-        const anchor = this.VesselArray[this.VesselIndex].path.getPoint(prog);
+        const prog = clamp(this.MainCell.progress - 0.007, 0, 1);
+        const spotlightTarget = this.VesselArray[this.VesselIndex].path.getPoint(prog);
 
-        const spotlightPosition = lightingDummy.localToWorld(
-            spotlightOffSet.clone()
-        );
+        const spotlightPosition = dummy.localToWorld(SPOTLIGHT_OFFSET.clone());
         this.SpotLight.position.copy(spotlightPosition);
-        this.SpotLight.lookAt(anchor);
+        this.SpotLight.lookAt(spotlightTarget);
+
         this.PointLight.position.copy(
-            lightingDummy.localToWorld(new THREE.Vector3(0, 0, +pointLightDepth))
+            dummy.localToWorld(new THREE.Vector3(0, 0, POINT_LIGHT_DEPTH))
         );
 
         const directionallightPosition = this.Camera.localToWorld(
-            directionalLightOffset.clone()
+            DIRECTIONAL_LIGHT_OFFSET.clone()
         );
         this.DirectionalLight.position.copy(directionallightPosition);
-        this.DirectionalLight.lookAt(anchor);
+        this.DirectionalLight.lookAt(spotlightTarget);
     }
 
-    private AdjustDummyForTransform(object: THREE.Object3D) {
-        const cameraPos = this.Camera.position;
-        object.position.copy(cameraPos);
-        object.lookAt(...this.MainCell.group.position.clone().toArray());
-        object.updateMatrix()
-        object.updateMatrixWorld(true)
-    }
 
     private UpdateVesselIndexesAndCellProgress() {
         this.VesselIndex = (this.VesselIndex + 1) % 2;
@@ -498,6 +485,15 @@ export default class AnimationsController {
             data.progress = clamp(data.progress - 1, 0, 2)
             return data;
         })
+    }
+
+    private getCurrentPath(itemProgress: number) {
+        const inSecondTube = itemProgress > 1;
+        const index = inSecondTube ? (this.VesselIndex + 1) % 2 : this.VesselIndex;
+        const progressAlongPath = inSecondTube ? (itemProgress % 1) : itemProgress;
+
+        let currentPath = this.VesselArray[index].path;
+        return { currentPath, progress: progressAlongPath };
     }
 }
 
@@ -561,18 +557,18 @@ function GenerateBloodVessels(
 ) {
     const outerVesselGeometry = new THREE.TubeGeometry(
         path,
-        tubularSegments,
-        outerWallRadius,
-        radialSegments
+        TUBULAR_SEGMENTS,
+        OUTER_WALL_RADIUS,
+        RADIAL_SEGMENTS
     );
 
     const outerVesselMesh = new THREE.Mesh(outerVesselGeometry, outerVesselMaterial);
 
     const innerVesselGeometry = new THREE.TubeGeometry(
         path,
-        tubularSegments,
-        innerWallRadius,
-        radialSegments
+        TUBULAR_SEGMENTS,
+        INNER_WALL_RADIUS,
+        RADIAL_SEGMENTS
     );
 
     const innerVesselMesh = new THREE.Mesh(innerVesselGeometry, innerVesselMaterial);
@@ -590,7 +586,7 @@ function GenerateNextVessel(
 ) {
     const endOfCurrentVesselPoints = lastVesselCurvePoints.slice(-2).map(p => p.toArray());
 
-    const pathPoints = generateVesselCurveFromStartPoints(endOfCurrentVesselPoints, curvePointCount, noiseStart);
+    const pathPoints = generateVesselCurveFromStartPoints(endOfCurrentVesselPoints, CURVE_POINT_COUNT, noiseStart);
     const path = new THREE.CatmullRomCurve3(pathPoints);
 
     const { innerVesselMesh, outerVesselMesh } = GenerateBloodVessels(outerVesselMaterial, innerVesselMaterial, path);
@@ -603,7 +599,7 @@ function GenerateNextVessel(
 }
 
 const getRandom = (min: number, max: number) => Math.random() * (max - min) + min;
-const randomOffSet = () => getRandom(-innerWallRadius, innerWallRadius);
+const randomOffSet = () => getRandom(-INNER_WALL_RADIUS, INNER_WALL_RADIUS);
 
 const audioLoader = new THREE.AudioLoader();
 
