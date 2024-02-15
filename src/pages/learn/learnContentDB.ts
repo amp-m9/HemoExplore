@@ -35,6 +35,6 @@ export const learnDB:{[id:string]:LearnSubjectProps} = {
         title: "HAEMOGLOBIN",
         subTitle: "A MULTIFACETED OXYGEN TRANSPORTER", 
         summary: "Haemoglobin, a protein residing within red blood cells, is pivotal for the intricate process of oxygen transport in the human body. Structurally, it comprises four globular protein chains, each associated with a heme group containing iron. This iron is the crucial component that allows haemoglobin to bind and release oxygen in a reversible manner. Through cooperative binding, haemoglobin ensures efficient oxygen loading in the lungs and unloading in oxygen-deprived tissues. Its affinity for oxygen is modulated by factors like pH and carbon dioxide levels, a phenomenon known as the Bohr effect. Additionally, haemoglobin can bind to carbon dioxide and, in certain genetic conditions, undergo mutations leading to disorders like sickle cell disease and thalassemia, emphasizing its central role in human health and physiology.",
-        next: getNextIndex(sections.haemoglobin);
+        next: getNextIndex(sections.haemoglobin)
     }
 }
