@@ -7,17 +7,6 @@ const Learn: Component = () => {
 
     return (
         <div class={`${styles.learnPage}`} >
-            <div class={styles.bgBlur} />
-            <div class={styles.learnPageGrid}>
-                <For each={Object.values(learnDB)} fallback={<div />}>
-                    {(item, index) => (
-                        <SubjectCard
-                            title={item.title}
-                            img={item.icon}
-                            markdown={Object.keys(learnDB)[index()]} />
-                    )}
-                </For>
-            </div>
         </div >
     );
 };
