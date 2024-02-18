@@ -17,8 +17,9 @@ const RED_BLOOD_CELL_COUNT = 600;
 const POINT_LIGHT_DEPTH = 22;
 const STEP = 0.0001;
 const CURVE_POINT_COUNT = 300;
-const IDLE_CAMERA_ROTATION_OFFSET = 0.0998;
+const IDLE_CAMERA_ROTATION_OFFSET = { x: 0, y: 0.0998, z: 0 };
 const IDLE_OFFSET_ALONG_TAN = 15;
+const IDLE_TARGET_OFFSET = { x: 0, y: 0, z: -5 };
 const DIRECTIONAL_LIGHT_OFFSET = new THREE.Vector3(-10, -10, 0);
 const SPOTLIGHT_OFFSET = new THREE.Vector3(10, -7, -100);
 
@@ -47,13 +48,9 @@ export default class AnimationsController {
     private Scene: THREE.Scene;
     private Camera: THREE.PerspectiveCamera;
     private CameraSettings = {
-        rotationAfterLook: {
-            x: 0,
-            y: IDLE_CAMERA_ROTATION_OFFSET,
-            z: 0
-        },
+        rotationAfterLook: IDLE_CAMERA_ROTATION_OFFSET,
         offSetAlongTangent: IDLE_OFFSET_ALONG_TAN,
-        targetOffSet: new THREE.Vector3(0, 0, -5),
+        targetOffSet: IDLE_TARGET_OFFSET,
     }
 
     private Textures = { gradientMaps: {} };
@@ -75,6 +72,7 @@ export default class AnimationsController {
     BloodCellRotation: number = 0;
     RelativeVelocity: number = 1;
 
+    private currentAnimation;
 
     public static getInstance(): AnimationsController {
         if (!AnimationsController.instance) {
@@ -121,6 +119,51 @@ export default class AnimationsController {
             }
         )
     }
+
+    public TransitionToHome() {
+        if (!this.currentAnimation) {
+            this.currentAnimation = gsap.timeline();
+        }
+        this.currentAnimation.clear();
+        const animationStart = 0.3;
+        this.currentAnimation.to(this.CameraSettings.rotationAfterLook,
+            {
+                ...IDLE_CAMERA_ROTATION_OFFSET,
+                duration: 1,
+            }, animationStart);
+        this.currentAnimation.to(this.CameraSettings.targetOffSet,
+            {
+                ...IDLE_TARGET_OFFSET,
+                duration: 1,
+            }, animationStart);
+        this.currentAnimation.to(this.CameraSettings,
+            {
+                offSetAlongTangent: IDLE_OFFSET_ALONG_TAN,
+                duration: 1,
+            }, animationStart)
+        this.currentAnimation.play();
+    }
+
+    public TransitionToLearn() {
+        if (!this.currentAnimation) {
+            this.currentAnimation = gsap.timeline();
+        }
+        this.currentAnimation.clear();
+        const animationStart = 0.3;
+        this.currentAnimation.to(this.CameraSettings.rotationAfterLook,
+            {
+                x: -.01,
+                z: 0,
+                duration: 1,
+            }, animationStart);
+        this.currentAnimation.to(this.CameraSettings,
+            {
+                offSetAlongTangent: 3,
+                duration: 1,
+            }, animationStart)
+        this.currentAnimation.play();
+    }
+
 
     public ShutDown() {
         this.Renderer.dispose();
@@ -448,7 +491,9 @@ export default class AnimationsController {
 
         this.Camera.position.copy(this.MainCell.group.worldToLocal(cameraPosition))
         this.Camera.lookAt(this.MainCell.group.position);
+        this.Camera.rotateX(Math.PI * rotationAfterLook.x)
         this.Camera.rotateY(Math.PI * rotationAfterLook.y)
+        this.Camera.rotateZ(Math.PI * rotationAfterLook.z)
     }
 
     private UpdateLighting() {

@@ -15,6 +15,14 @@
 }
 
 @font-face {
+  font-family: "Overpass";
+  src: url(./assets/fonts/Overpass-VariableFont_wght.ttf);
+  font-style: normal;
+  text-rendering: optimizeLegibility;
+  font-weight: 100 1000;
+}
+
+@font-face {
   font-family: "ABeeZee";
   src: url(./assets/fonts/ABeeZee-Regular.ttf);
   font-style: normal;
@@ -33,12 +41,10 @@
 :root {
   --main-bg-color: #ffffff;
   --leftPanelWidth: 300px;
-  --navbarHeight: 74px;
+  --navbarHeight: 65px;
   --learnPanelPaddingTop: 50px;
   --linkRed: #EB3447
 }
-
-/* learn page  */
 
 .navbar {
   display: flex;
@@ -106,14 +112,11 @@ a.activeLink {
 
 
 
-.learnPage {
+.belowNav {
   background-blend-mode: normal;
   box-sizing: border-box;
   height: calc(100vh - var(--navbarHeight));
   width: 100%;
-  overflow-y: scroll;
-  overflow-x: hidden;
-  z-index: 1;
   color: white;
 }
 
@@ -129,6 +132,39 @@ a.activeLink {
   top: 0;
 }
 
+.learnPageContents {
+  max-width: 700px;
+  margin-left: min(15vw, 300px);
+}
+
+.learn {
+  place-items: center;
+}
+
+.learn ul {
+  list-style: none;
+  margin-top: 0;
+}
+
+.heading {
+  font-family: Overpass;
+  font-size: 149px;
+  margin-top: 0;
+  margin-bottom: 25px;
+  line-height: 100%;
+  font-weight: 900;
+}
+
+.subheading {
+  font-family: Bebas Neue;
+  font-size: 48px;
+}
+
+.subsubheading {
+  font-family: Bebas Neue;
+  font-size: 35px;
+}
+
 .learnPanelWrapper {
   z-index: 1;
   box-sizing: border-box;
@@ -141,14 +177,6 @@ a.activeLink {
   color: #ffffff;
 }
 
-.smallWrapper {
-  width: 850px
-}
-
-.learnPage p {
-  font-family: Cantarell;
-  font-size: 17px;
-}
 
 .learnPanelMiddle {
   padding: 61px;
@@ -289,7 +317,6 @@ a.activeLink {
   align-items: center;
   justify-items: left;
   margin: 0;
-  background: radial-gradient(circle at 65%, rgba(0, 0, 0, 0) 0%, #000000 90.86%, #000000 100%);
   position: absolute;
   width: 100%;
   height: 100%;
@@ -473,14 +500,6 @@ nav a:hover::before {
 .objectDataText {
   font-family: Cantarell;
   font-size: 18px;
-}
-
-.learnPageGrid {
-  width: min-content;
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 25px;
-  margin: auto auto;
 }
 
 .subjectCard {
