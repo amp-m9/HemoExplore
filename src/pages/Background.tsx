@@ -10,12 +10,7 @@ const Background: Component = () => {
     })
     onCleanup(controller.ShutDown)
     return (
-        <div>
-            <canvas class={`webgl ${styles.background}`} id='animationContainer' />
-            {/* <p id="subtitles" class={styles.subtitles} innerHTML="TESTING TESTING" /> */}
-            {/* <div id='subtitlesContainer' class={styles.subtitlesContainer}> */}
-            {/* </div> */}
-        </div>
+        <canvas class={styles.background} id='animationContainer' />
     )
 }
 
