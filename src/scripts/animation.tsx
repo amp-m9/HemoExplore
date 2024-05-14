@@ -1,25 +1,28 @@
 import * as THREE from "three";
-import Stats from "stats-js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import gsap from "gsap";
-import { clamp } from "three/src/math/MathUtils";
-import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
+import * as dat from 'dat.gui';
 import ambientAudioFile from "../assets/sound/zapsplat_nature_underwater_ambience_flowing_current_deep_002_30535.mp3"
 import heartbeatAudioFile from "../assets/sound/zapsplat_human_heartbeat_single_26493.mp3";
 import { generateVesselCurve, generateVesselCurveFromStartPoints } from "./noise";
 import { MainCell, CellData, BloodVessel } from "./interfaces";
+import { EffectComposer, DepthOfFieldEffect, VignetteEffect, EffectPass, RenderPass, KawaseBlurPass } from "postprocessing";
 
 const INNER_WALL_RADIUS = 4.5;
 const RADIAL_SEGMENTS = 17;
 const OUTER_WALL_RADIUS = INNER_WALL_RADIUS + 0.5;
 const TUBULAR_SEGMENTS = 128;
-const RED_BLOOD_CELL_COUNT = 600;
+const RED_BLOOD_CELL_COUNT = 100;
 const POINT_LIGHT_DEPTH = 22;
 const STEP = 0.0001;
 const CURVE_POINT_COUNT = 300;
 const IDLE_CAMERA_ROTATION_OFFSET = { x: 0, y: 0.0998, z: 0 };
 const IDLE_OFFSET_ALONG_TAN = 15;
 const IDLE_TARGET_OFFSET = { x: 0, y: 0, z: -5 };
+const BOKEH_FOCUS_DISTANCE = 0.08;
+const IDLE_FOCAL_LENGTH = 0.048;
+const FOCAL_LENGTH_SCALING = 0.0032;
+const BOKEH_SCALE_BLURRY = 10;
 const DIRECTIONAL_LIGHT_OFFSET = new THREE.Vector3(-10, -10, 0);
 const SPOTLIGHT_OFFSET = new THREE.Vector3(10, -7, -100);
 
@@ -51,12 +54,15 @@ export default class AnimationsController {
         rotationAfterLook: IDLE_CAMERA_ROTATION_OFFSET,
         offSetAlongTangent: IDLE_OFFSET_ALONG_TAN,
         targetOffSet: IDLE_TARGET_OFFSET,
+        mousePosition: { mouseX: 0, mouseY: 0 }
     }
+    private Composer: EffectComposer;
+    private Bokeh: DepthOfFieldEffect;
 
     private Textures = { gradientMaps: {} };
-    private Geometries = { redBloodCell: {}, innerVessel: {}, outerVessel: {} };
-    private Materials = { redBloodCell: {}, highlight: {}, innerVessel: {}, outerVessel: {} }
-    private Sounds = { whoosh: {}, ambient: {}, beat: {} }
+    private Geometries: { [id: string]: THREE.BufferGeometry<THREE.NormalBufferAttributes> } = { redBloodCell: {} };
+    private Materials: { [id: string]: THREE.Material } = { redBloodCell: {}, highlight: {}, innerVessel: {}, outerVessel: {} }
+    private Sounds: { [id: string]: THREE.Audio<GainNode> } = { ambient: {}, beat: {} }
 
     private MainCell: MainCell;
     private RedBloodCellData: Array<CellData>;
@@ -66,13 +72,16 @@ export default class AnimationsController {
     private VesselArray = [this.FirstBloodVessel, this.SecondBloodVessel]
     private VesselIndex = 0;
 
+    private TimeElapsed = 0;
     private PointLight: THREE.PointLight;
     private SpotLight: THREE.SpotLight;
     private DirectionalLight: THREE.DirectionalLight;
     BloodCellRotation: number = 0;
     RelativeVelocity: number = 1;
 
-    private currentAnimation;
+    private currentAnimation: gsap.core.Timeline = gsap.timeline();
+    BlurPass: KawaseBlurPass;
+    Delta: number;
 
     public static getInstance(): AnimationsController {
         if (!AnimationsController.instance) {
@@ -88,8 +97,10 @@ export default class AnimationsController {
     public async Initialise() {
         if (this.Initialised)
             return;
+        this.Initialised = true;
 
         this.SetUpRenderer();
+        this.InitPostProcessing();
         this.GenerateCellData();
 
         await Promise.all([
@@ -105,32 +116,34 @@ export default class AnimationsController {
         this.updateCells();
         this.UpdateLighting();
         this.Renderer.render(this.Scene, this.Camera)
-        this.Initialised = true;
     }
 
     public AnimateIdle() {
         this.Renderer.setAnimationLoop(
-            () => {
+            (elapsed) => {
+                const elapsedSeconds = elapsed *= 0.001;
+                this.Delta = (elapsedSeconds - this.TimeElapsed);
+                this.TimeElapsed = elapsedSeconds;
                 this.updateCells();
                 this.UpdateMainCell();
-                this.UpdateCamera();
+                this.UpdateCamera(this.Delta);
                 this.UpdateLighting();
-                this.Renderer.render(this.Scene, this.Camera);
+                this.Composer.render();
+                // console.log(this.Camera.position.distanceTo(this.MainCell.group.position));
             }
         )
     }
 
     public TransitionToHome() {
-        if (!this.currentAnimation) {
-            this.currentAnimation = gsap.timeline();
-        }
-        this.currentAnimation.clear();
-        const animationStart = 0.3;
+        this.currentAnimation.kill();
+        this.currentAnimation = new gsap.core.Timeline();
+        const animationStart = 0.0;
         this.currentAnimation.to(this.CameraSettings.rotationAfterLook,
             {
                 ...IDLE_CAMERA_ROTATION_OFFSET,
                 duration: 1,
             }, animationStart);
+
         this.currentAnimation.to(this.CameraSettings.targetOffSet,
             {
                 ...IDLE_TARGET_OFFSET,
@@ -140,16 +153,22 @@ export default class AnimationsController {
             {
                 offSetAlongTangent: IDLE_OFFSET_ALONG_TAN,
                 duration: 1,
-            }, animationStart)
-        this.currentAnimation.play();
+            }, animationStart);
+        this.currentAnimation.to(this.Bokeh.cocMaterial.uniforms.focalLength, {
+            value: FOCAL_LENGTH_SCALING * IDLE_OFFSET_ALONG_TAN,
+            duration: 1,
+        }, animationStart);
+
+        this.currentAnimation.play().then(() => {
+            // console.log(IDLE_FOCAL_LENGTH / IDLE_OFFSET_ALONG_TAN);
+            console.log(this.Bokeh.cocMaterial.uniforms);
+        });
     }
 
     public TransitionToLearn() {
-        if (!this.currentAnimation) {
-            this.currentAnimation = gsap.timeline();
-        }
-        this.currentAnimation.clear();
-        const animationStart = 0.3;
+        this.currentAnimation.kill();
+        this.currentAnimation = new gsap.core.Timeline();
+        const animationStart = 0.0;
         this.currentAnimation.to(this.CameraSettings.rotationAfterLook,
             {
                 x: -.01,
@@ -161,9 +180,26 @@ export default class AnimationsController {
                 offSetAlongTangent: 3,
                 duration: 1,
             }, animationStart)
+        this.currentAnimation.to(this.Bokeh.cocMaterial.uniforms.focusDistance, {
+            value: 3 * FOCAL_LENGTH_SCALING,
+            duration: 1,
+        }, animationStart);
         this.currentAnimation.play();
     }
 
+
+    public BlurLearnBackground() {
+        this.currentAnimation.kill();
+        this.currentAnimation = new gsap.core.Timeline();
+        this.currentAnimation.to(this.BlurPass, { scale: 5, duration: 1 })
+        this.currentAnimation.play();
+    }
+    public RevertBlurLearn() {
+        this.currentAnimation.kill();
+        this.currentAnimation = new gsap.core.Timeline();
+        this.currentAnimation.to(this.BlurPass, { scale: 0, duration: 1 })
+        this.currentAnimation.play();
+    }
 
     public ShutDown() {
         this.Renderer.dispose();
@@ -202,7 +238,7 @@ export default class AnimationsController {
         for (let i = 0; i < this.RedBloodCellData.length; i++) {
             const cellData: CellData = {
                 offset: new THREE.Vector3(randomOffSet(), randomOffSet()),
-                progress: getRandom(0, 1),
+                progress: getRandom(0.47, 0.53),
                 velocity: getRandom(0.00009, 0.0001) / 2,
             };
             if (cellData.offset.length() > INNER_WALL_RADIUS - 0.4) {
@@ -227,8 +263,8 @@ export default class AnimationsController {
     }
 
     private SetUpRenderer() {
-        const canvas = document.querySelector("canvas.webgl") as HTMLCanvasElement;
-        this.Renderer = new THREE.WebGLRenderer({ antialias: true, canvas: canvas });
+        const canvas = document.getElementById("animationContainer") as HTMLCanvasElement;
+        this.Renderer = new THREE.WebGLRenderer({ antialias: true, canvas: canvas, powerPreference: 'high-performance' });
         this.Renderer.shadowMap.enabled = true;
         this.Renderer.setSize(window.innerWidth, window.innerHeight);
         this.Renderer.setClearColor(0xd24141)
@@ -240,6 +276,42 @@ export default class AnimationsController {
         this.Camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, nearPane, farPane);
 
         window.addEventListener("resize", () => this.onWindowResize(this.Camera, this.Renderer), false);
+        window.addEventListener('mousemove', (e) => this.onMouseMove(e), false);
+    }
+
+    onMouseMove(event: MouseEvent) {
+        const mouseX = clamp((event.clientX / window.innerWidth) * 2 - 1, .1, .9);
+        const mouseY = clamp(-(event.clientY / window.innerHeight) * 2 + 1, .1, .9);
+        this.CameraSettings.mousePosition = { mouseX, mouseY }
+    }
+
+    private InitPostProcessing() {
+
+        const composer = new EffectComposer(this.Renderer);
+        const bokeh = new DepthOfFieldEffect(this.Camera, {
+            focalLength: IDLE_FOCAL_LENGTH,
+            focusDistance: BOKEH_FOCUS_DISTANCE,
+            bokehScale: BOKEH_SCALE_BLURRY,
+        })
+
+        const bokehPass = new EffectPass(this.Camera, bokeh);
+        const blurPass = new KawaseBlurPass({ width: window.innerWidth, height: window.innerHeight });
+        blurPass.scale = 0;
+        const renderPass = new RenderPass(this.Scene, this.Camera);
+
+        composer.addPass(renderPass)
+        composer.addPass(bokehPass);
+        composer.addPass(blurPass);
+
+        this.Composer = composer;
+        this.Bokeh = bokeh;
+        this.BlurPass = blurPass;
+
+
+        // const gui = new dat.GUI();
+        // gui.domElement.style.zIndex = '100000';
+        // gui.add(bokeh.cocMaterial.uniforms.focalLength, 'value', .04, .06);
+        // gui.add(bokeh.cocMaterial.uniforms.focusDistance, 'value', 0.00, .1).onChange(console.log);
     }
 
     private onWindowResize(Camera: THREE.PerspectiveCamera, Renderer: THREE.Renderer) {
@@ -418,9 +490,13 @@ export default class AnimationsController {
         let data: CellData;
         for (let i = 0; i < this.RedBloodCellData.length; i++) {
             data = this.RedBloodCellData[i];
-            const lastProgStr = data.progress.toString();
             const lastProg = data.progress;
             data.progress += data.velocity * this.RelativeVelocity;
+            data.progress =
+                (data.progress > this.MainCell.progress + .03 && lastProg < data.progress)
+                    ? this.MainCell.progress - .03 :
+                    (data.progress < this.MainCell.progress - .03 && lastProg > data.progress)
+                        ? this.MainCell.progress + .03 : data.progress;
 
             if (lastProg < 1 && !(data.progress < 1))
                 data.progress += this.EntryOverlap;
@@ -482,18 +558,32 @@ export default class AnimationsController {
     }
 
 
-    private UpdateCamera() {
-        const { rotationAfterLook, offSetAlongTangent } = this.CameraSettings;
+    private UpdateCamera(delta: number) {
+        const { rotationAfterLook, offSetAlongTangent, mousePosition } = this.CameraSettings;
         const { currentPath, progress } = this.getCurrentPath(this.MainCell.progress);
-
+        const { mouseX, mouseY } = mousePosition;
         const tangent = currentPath.getTangent(progress).normalize().multiplyScalar(offSetAlongTangent);
+        const binormal = new THREE.Vector3(0, 1, 0).cross(tangent).normalize();
         const cameraPosition = this.MainCell.group.position.clone().sub(tangent);
+        const camaraRootVector = this.MainCell.group.worldToLocal(cameraPosition);
 
-        this.Camera.position.copy(this.MainCell.group.worldToLocal(cameraPosition))
+        const translation = camaraRootVector
+            .clone()
+            .addScaledVector(binormal, mouseX * 1.1)
+            .addScaledVector(binormal.cross(tangent), mouseY * 0.1);
+
+
+
+        this.Camera.position
+            .lerp(translation, 1 * delta);
+
+        // this.Bokeh.uniforms['focus'].value = offSetAlongTangent;
         this.Camera.lookAt(this.MainCell.group.position);
         this.Camera.rotateX(Math.PI * rotationAfterLook.x)
         this.Camera.rotateY(Math.PI * rotationAfterLook.y)
         this.Camera.rotateZ(Math.PI * rotationAfterLook.z)
+
+
     }
 
     private UpdateLighting() {
@@ -656,4 +746,8 @@ async function LoadAudioFile(url: string, threeAudio: THREE.Audio, settings?: { 
             threeAudio.setVolume(settings.volume)
         }
     })
+}
+
+function clamp(number: number, min: number, max: number) {
+    return Math.max(min, Math.min(number, max));
 }
