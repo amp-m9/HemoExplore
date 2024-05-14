@@ -1,8 +1,12 @@
 import { onMount, type Component } from 'solid-js';
 import { A } from '@solidjs/router';
 import styles from '../../App.module.css';
+import AnimationsController from '../../scripts/animation';
 
 const Home: Component = () => {
+    onMount(() => {
+        AnimationsController.getInstance().TransitionToHome();
+    });
     return (
         <div>
             <div id='homeContainer' class={`${styles.homeContainer}`}>
