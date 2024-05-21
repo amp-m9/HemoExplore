@@ -52,10 +52,11 @@
   position: sticky;
   top: 0px;
   color: white;
+  background: black;
   height: var(--navbarHeight);
   width: 100vw;
   box-sizing: border-box;
-  z-index: 1001;
+  /* z-index: 1001; */
 }
 
 
@@ -133,12 +134,20 @@ a.activeLink {
 }
 
 .learnPageContents {
-  max-width: 700px;
-  margin-left: min(15vw, 300px);
+  display: flex;
+  flex-direction: row;
+  gap: 15px;
+  width: 100%;
+  margin-left: min(15vw, 250px);
+  margin-right: min(15vw, 250px);
+  margin-bottom: auto;
+  margin-top: 100px
+    /* padding-top: 20px; */
 }
 
 .learn {
   place-items: center;
+  text-transform: capitalize;
 }
 
 .learn ul {
@@ -147,6 +156,7 @@ a.activeLink {
 }
 
 .heading {
+  text-transform: capitalize;
   font-family: Overpass;
   font-size: 149px;
   margin-top: 0;
@@ -165,8 +175,40 @@ a.activeLink {
   font-size: 35px;
 }
 
+.learnLinks {
+  transition: all linear .2s;
+}
+
+.learnLinks:hover {
+  /* transition: color linear; */
+  color: var(--linkRed);
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+
+  100% {
+    opacity: 1;
+  }
+}
+
+.learnPreview {
+  animation: fadeIn 1s;
+}
+
+.learnPreviewHeader {
+  position: absolute;
+  right: 10px;
+  bottom: 0;
+  color: var(--linkRed);
+  font-family: 'Bebas Neue';
+  font-size: larger;
+}
+
 .learnPanelWrapper {
-  z-index: 1;
+  /* z-index: 1; */
   box-sizing: border-box;
   display: flex;
   flex-direction: row;
@@ -245,11 +287,11 @@ a.activeLink {
 }
 
 .background {
-  margin: 0;
+  box-sizing: border-box;
+  height: 100vh;
+  width: 100vw;
   position: absolute;
   z-index: -2;
-  right: 0;
-  top: 0;
   background: var(--linkRed);
 }
 
@@ -271,7 +313,7 @@ a.activeLink {
 
 .credits {
   position: fixed;
-  z-index: 10000;
+  /* z-index: 10000; */
   color: #ffffff;
   bottom: 20px;
   right: 35px;
@@ -475,7 +517,7 @@ nav a:hover::before {
   background-color: #2B1944;
   color: white;
   min-height: calc(100% - 60px);
-  z-index: 2;
+  /* z-index: 2; */
   padding: 0 30px 50px 30px;
   transition: all .3s;
 }

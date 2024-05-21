@@ -43,7 +43,6 @@ const Learn: Component = () => {
         controller.BlurLearnBackground();
     };
     const unBlur = () => { controller.RevertBlurLearn(); setPreview(null) };
-    // const unBlur = () => controller.RevertBlurLearn()
 
 
     return (
