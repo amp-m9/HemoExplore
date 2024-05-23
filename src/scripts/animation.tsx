@@ -20,8 +20,7 @@ const IDLE_CAMERA_ROTATION_OFFSET = { x: 0, y: 0.0998, z: 0 };
 const IDLE_OFFSET_ALONG_TAN = 15;
 const IDLE_TARGET_OFFSET = { x: 0, y: 0, z: -5 };
 const BOKEH_FOCUS_DISTANCE = 0.08;
-const IDLE_FOCAL_LENGTH = 0.048;
-const FOCAL_LENGTH_SCALING = 0.0032;
+const FOCAL_LENGTH = 0.048;
 const BOKEH_SCALE_BLURRY = 10;
 const DIRECTIONAL_LIGHT_OFFSET = new THREE.Vector3(-10, -10, 0);
 const SPOTLIGHT_OFFSET = new THREE.Vector3(10, -7, -100);
@@ -154,10 +153,6 @@ export default class AnimationsController {
                 offSetAlongTangent: IDLE_OFFSET_ALONG_TAN,
                 duration: 1,
             }, animationStart);
-        this.currentAnimation.to(this.Bokeh.cocMaterial.uniforms.focalLength, {
-            value: FOCAL_LENGTH_SCALING * IDLE_OFFSET_ALONG_TAN,
-            duration: 1,
-        }, animationStart);
 
         this.currentAnimation.play().then(() => {
             // console.log(IDLE_FOCAL_LENGTH / IDLE_OFFSET_ALONG_TAN);
@@ -180,10 +175,6 @@ export default class AnimationsController {
                 offSetAlongTangent: 3,
                 duration: 1,
             }, animationStart)
-        this.currentAnimation.to(this.Bokeh.cocMaterial.uniforms.focusDistance, {
-            value: 3 * FOCAL_LENGTH_SCALING,
-            duration: 1,
-        }, animationStart);
         this.currentAnimation.play();
     }
 
@@ -194,7 +185,7 @@ export default class AnimationsController {
         this.currentAnimation.to(this.BlurPass, { scale: 5, duration: 1 })
         this.currentAnimation.play();
     }
-    public RevertBlurLearn() {
+    public UnBlurLearn() {
         this.currentAnimation.kill();
         this.currentAnimation = new gsap.core.Timeline();
         this.currentAnimation.to(this.BlurPass, { scale: 0, duration: 1 })
@@ -289,7 +280,7 @@ export default class AnimationsController {
 
         const composer = new EffectComposer(this.Renderer);
         const bokeh = new DepthOfFieldEffect(this.Camera, {
-            focalLength: IDLE_FOCAL_LENGTH,
+            focalLength: FOCAL_LENGTH,
             focusDistance: BOKEH_FOCUS_DISTANCE,
             bokehScale: BOKEH_SCALE_BLURRY,
         })
@@ -569,21 +560,18 @@ export default class AnimationsController {
 
         const translation = camaraRootVector
             .clone()
-            .addScaledVector(binormal, mouseX * 1.1)
+            .addScaledVector(binormal, mouseX * 7)
             .addScaledVector(binormal.cross(tangent), mouseY * 0.1);
-
-
 
         this.Camera.position
             .lerp(translation, 1 * delta);
 
-        // this.Bokeh.uniforms['focus'].value = offSetAlongTangent;
         this.Camera.lookAt(this.MainCell.group.position);
         this.Camera.rotateX(Math.PI * rotationAfterLook.x)
         this.Camera.rotateY(Math.PI * rotationAfterLook.y)
         this.Camera.rotateZ(Math.PI * rotationAfterLook.z)
 
-
+        this.Bokeh.target = this.MainCell.mesh.position;
     }
 
     private UpdateLighting() {

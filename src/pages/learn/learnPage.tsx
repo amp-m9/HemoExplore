@@ -42,7 +42,7 @@ const Learn: Component = () => {
         console.log(preview());
         controller.BlurLearnBackground();
     };
-    const unBlur = () => { controller.RevertBlurLearn(); setPreview(null) };
+    const unBlur = () => { controller.UnBlurLearn(); setPreview(null) };
 
 
     return (
